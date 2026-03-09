@@ -1,6 +1,6 @@
 {
   "name": "mrs-tpv",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "TPV profesional offline MRS_TPV - Electron + PocketBase",
   "main": "main/main.js",
   "author": "MRS_TPV",
@@ -43,7 +43,7 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "resources/icon.ico",
+      "icon": "resources/ICON.ico",
       "artifactName": "MRS_TPV-Setup-${version}.${ext}"
     },
     "publish": [
