@@ -1,6 +1,6 @@
 {
   "name": "mrs-tpv",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "TPV profesional offline MRS_TPV - Electron + PocketBase",
   "main": "main/main.js",
   "author": "MRS_TPV",

@@ -545,21 +545,313 @@
     }
   }
 
-  async function buildFacturaHtml(factura) {
+  function getClienteFacturaDetalle(factura) {
+    const rawCliente = factura?.cliente;
+    let byId = null;
+    if (factura?.clienteId) {
+      byId = clientes.find(c => c.id === factura.clienteId) || null;
+    } else if (rawCliente?.id) {
+      byId = clientes.find(c => c.id === rawCliente.id) || null;
+    }
+    const source = byId || rawCliente || {};
+    return {
+      nombre: String(source?.nombre || source?.razonSocial || source?.email || '-'),
+      direccion: String(source?.direccion || '-'),
+      telefono: String(source?.telefono || source?.whatsapp || '-'),
+      email: String(source?.email || '-')
+    };
+  }
+
+  function renderLineasFacturaA4(lineas) {
+    if (!Array.isArray(lineas) || lineas.length === 0) {
+      return '<tr><td colspan="4" style="text-align:center;color:#666;">Sin líneas</td></tr>';
+    }
+    return lineas.map((l) => {
+      const descripcion = String(l?.descripcion || l?.nombre || '-');
+      const cantidad = Number(l?.cantidad || 1);
+      const precio = Number(l?.precio || 0);
+      const subtotal = Number(l?.subtotal !== undefined ? l.subtotal : (cantidad * precio));
+      return `
+        <tr>
+          <td>${escapeHtml(descripcion)}</td>
+          <td>${cantidad}</td>
+          <td>${formatEuro(precio)}</td>
+          <td>${formatEuro(subtotal)}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function buildFacturaA4Inner(factura, options = {}) {
     const subtotal = Number(factura?.base !== undefined ? factura.base : (factura?.subtotal !== undefined ? factura.subtotal : 0));
     const total = Number(factura?.total || 0);
     const iva = Math.max(0, total - subtotal);
     const estado = String(factura?.estado || '-');
     const numero = String(factura?.numero || 'Factura');
-    const fecha = formatFecha(factura?.fechaHora);
-    const empresa = 'MRS_TPV';
-    const empresaNombre = String(config?.nombreEmpresa || empresa);
-    const emailEmpresa = String(config?.email || '');
-    const mostrarLogo = config?.facturaLogo !== false && !!config?.logoUrl;
-    const mostrarEmail = config?.facturaEmail !== false;
-    const mostrarRazonSocial = config?.facturaRazonSocial !== false;
-    const clienteNombre = getClienteNombre(factura?.cliente || (factura?.clienteId ? { id: factura.clienteId } : null));
-    const ticketRef = getTicketNumeroForFactura(factura);
+    const fecha = formatFechaCorta(factura?.fechaHora);
+    const empresaNombre = String(config?.nombreEmpresa || 'MRS_TPV');
+    const empresaDireccion = String(config?.direccion || '-');
+    const empresaTelefono = String(config?.telefono || '-');
+    const empresaEmail = String(config?.email || '-');
+    const empresaCif = String(config?.cif || '-');
+    const numeroCuenta = String(config?.numeroCuenta || '-');
+    const notaLegal = String(
+      config?.facturaNotaLegal ||
+      'Nota legal: Este documento tiene validez fiscal y mercantil. Salvo error tipografico u omision. Para cualquier aclaracion, contacte con la empresa emisora.'
+    );
+    const cliente = getClienteFacturaDetalle(factura);
+
+    const ivaPct = (() => {
+      const keys = Object.keys(factura?.ivaPorTipo || {});
+      if (!keys.length) return '';
+      return keys[0] + '%';
+    })();
+
+    const lineasHtml = renderLineasFacturaA4(factura?.lineas);
+    const qrBlock = options?.verifactuHtml || '';
+
+    return `
+      <section class="fac-a4-sheet">
+        <header class="fac-a4-header">
+          <div>
+            <h1>FACTURA</h1>
+            <div class="fac-a4-numero">Nº ${escapeHtml(numero)}</div>
+          </div>
+          <div class="fac-a4-logo">
+            ${config?.logoUrl ? `<img src="${escapeHtml(config.logoUrl)}" alt="Logo">` : `<span>${escapeHtml(empresaNombre)}</span>`}
+          </div>
+        </header>
+
+        <section class="fac-a4-bloques">
+          <div class="fac-a4-bloque">
+            <h3>DATOS DEL CLIENTE</h3>
+            <p>${escapeHtml(cliente.nombre)}</p>
+            <p>${escapeHtml(cliente.telefono)}</p>
+            <p>${escapeHtml(cliente.email)}</p>
+            <p>${escapeHtml(cliente.direccion)}</p>
+          </div>
+          <div class="fac-a4-divider"></div>
+          <div class="fac-a4-bloque">
+            <h3>DATOS DE LA EMPRESA</h3>
+            <p>${escapeHtml(empresaNombre)}</p>
+            <p>${escapeHtml(empresaCif)}</p>
+            <p>${escapeHtml(empresaTelefono)}</p>
+            <p>${escapeHtml(empresaEmail)}</p>
+            <p>${escapeHtml(empresaDireccion)}</p>
+          </div>
+        </section>
+
+        <div class="fac-a4-meta">
+          <span>Fecha: ${escapeHtml(fecha)}</span>
+          <span>Estado: ${escapeHtml(estado)}</span>
+        </div>
+
+        <table class="fac-a4-table">
+          <thead>
+            <tr>
+              <th>Detalle</th>
+              <th>Cantidad</th>
+              <th>Precio</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${lineasHtml}
+          </tbody>
+        </table>
+
+        <section class="fac-a4-totales-wrap">
+          <div class="fac-a4-pago">
+            <h4>INFORMACIÓN DE PAGO</h4>
+            <p>Transferencia bancaria</p>
+            <p>Beneficiario: ${escapeHtml(empresaNombre)}</p>
+            <p>Número de cuenta: ${escapeHtml(numeroCuenta)}</p>
+          </div>
+          <div class="fac-a4-totales">
+            <div class="row"><span>IVA</span><span>${escapeHtml(ivaPct || '-')}</span><span>${formatEuro(iva)}</span></div>
+            <div class="row total"><span>TOTAL</span><span></span><span>${formatEuro(total)}</span></div>
+          </div>
+        </section>
+
+        <div class="fac-a4-legal">
+          ${escapeHtml(notaLegal)}
+        </div>
+
+        ${qrBlock}
+      </section>
+    `;
+  }
+
+  function getFacturaA4Style(forPrint = false) {
+    return `
+      <style>
+        @page { size: A4; margin: 8mm; }
+        * { box-sizing: border-box; }
+        body {
+          margin: 0;
+          padding: ${forPrint ? '0' : '12px'};
+          background: ${forPrint ? '#fff' : '#efefef'};
+          font-family: Arial, sans-serif;
+          color: #111;
+          width: ${forPrint ? '210mm' : 'auto'};
+          min-height: ${forPrint ? '297mm' : 'auto'};
+        }
+        .fac-a4-sheet {
+          width: ${forPrint ? '194mm' : '100%'};
+          max-width: ${forPrint ? '194mm' : '190mm'};
+          min-height: ${forPrint ? '279mm' : '255mm'};
+          margin: 0 auto;
+          background: #fff;
+          border: 1px solid #d8d8d8;
+          padding: 12mm 10mm;
+        }
+        .fac-a4-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          background: #f2f2f2;
+          margin: -12mm -10mm 10mm -10mm;
+          padding: 10mm 10mm 6mm 10mm;
+        }
+        .fac-a4-header h1 {
+          margin: 0 0 6px 0;
+          font-size: 52px;
+          letter-spacing: 0.5px;
+          line-height: 1;
+        }
+        .fac-a4-numero {
+          display: inline-block;
+          border: 2px solid #777;
+          padding: 4px 10px;
+          font-size: 18px;
+          font-weight: 700;
+          background: #fff;
+        }
+        .fac-a4-logo img {
+          max-width: 130px;
+          max-height: 65px;
+          object-fit: contain;
+          /* Forzar logo oscuro para impresión en papel blanco */
+          filter: brightness(0) saturate(100%);
+        }
+        .fac-a4-logo span {
+          font-size: 16px;
+          font-weight: 700;
+        }
+        .fac-a4-bloques {
+          display: grid;
+          grid-template-columns: 1fr 1px 1fr;
+          gap: 12px;
+          margin-bottom: 12px;
+        }
+        .fac-a4-divider {
+          background: #c6c6c6;
+        }
+        .fac-a4-bloque h3 {
+          margin: 0 0 8px 0;
+          font-size: 13px;
+          letter-spacing: 0.3px;
+        }
+        .fac-a4-bloque p {
+          margin: 3px 0;
+          font-size: 12px;
+        }
+        .fac-a4-meta {
+          display: flex;
+          justify-content: space-between;
+          margin: 6px 0 10px 0;
+          font-size: 12px;
+          color: #333;
+        }
+        .fac-a4-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 12px;
+        }
+        .fac-a4-table th {
+          background: #f2f2f2;
+          border: 1px solid #666;
+          padding: 6px;
+          font-size: 12px;
+          text-align: left;
+        }
+        .fac-a4-table th:nth-child(2),
+        .fac-a4-table th:nth-child(3),
+        .fac-a4-table th:nth-child(4),
+        .fac-a4-table td:nth-child(2),
+        .fac-a4-table td:nth-child(3),
+        .fac-a4-table td:nth-child(4) {
+          text-align: center;
+          width: 16%;
+        }
+        .fac-a4-table td {
+          border-bottom: 1px solid #ddd;
+          padding: 6px;
+          font-size: 12px;
+        }
+        .fac-a4-totales-wrap {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          gap: 14px;
+          margin-top: 18px;
+        }
+        .fac-a4-pago {
+          border: 2px solid #777;
+          padding: 8px;
+          width: 46%;
+          min-height: 90px;
+        }
+        .fac-a4-pago h4 {
+          margin: 0 0 6px 0;
+          font-size: 12px;
+        }
+        .fac-a4-pago p {
+          margin: 3px 0;
+          font-size: 11px;
+        }
+        .fac-a4-totales {
+          width: 42%;
+        }
+        .fac-a4-totales .row {
+          display: grid;
+          grid-template-columns: 1fr 70px 100px;
+          gap: 6px;
+          border-bottom: 1px solid #777;
+          padding: 6px 4px;
+          font-size: 13px;
+          text-align: right;
+        }
+        .fac-a4-totales .row span:first-child {
+          text-align: left;
+        }
+        .fac-a4-totales .total {
+          border: 2px solid #555;
+          border-top: 2px solid #555;
+          margin-top: 8px;
+          font-weight: 700;
+        }
+        .fac-a4-legal {
+          margin-top: 12px;
+          font-size: 10px;
+          color: #555;
+          line-height: 1.4;
+          border-top: 1px solid #e0e0e0;
+          padding-top: 8px;
+        }
+        .fac-a4-verifactu {
+          margin-top: 14px;
+          padding-top: 10px;
+          border-top: 1px solid #ddd;
+          font-size: 10px;
+          color: #666;
+        }
+      </style>
+    `;
+  }
+
+  async function buildFacturaHtml(factura) {
+    const estado = String(factura?.estado || '-');
     
     let qrData = '';
     let leyendaVerifactu = '';
@@ -574,57 +866,17 @@
       }
     }
 
-    return `
-      <div class="factura-preview">
-        <div class="factura-preview-head">
-          <div>
-            ${mostrarLogo ? `<div style="margin-bottom:8px"><img src="${escapeHtml(config?.logoUrl || '')}" alt="Logo" style="max-width:150px;max-height:56px;object-fit:contain"></div>` : ''}
-            ${mostrarRazonSocial ? `<h3>${escapeHtml(empresaNombre)}</h3>` : ''}
-            ${mostrarEmail && emailEmpresa ? `<p style="margin-top:6px">${escapeHtml(emailEmpresa)}</p>` : '<p>Documento comercial</p>'}
-          </div>
-          <div class="factura-preview-meta">
-            <div><strong>Factura:</strong> ${escapeHtml(numero)}</div>
-            <div><strong>Fecha:</strong> ${escapeHtml(fecha)}</div>
-            <div><strong>Estado:</strong> ${escapeHtml(estado)}</div>
-          </div>
-        </div>
-        <div class="factura-preview-client">
-          <strong>Cliente:</strong> ${escapeHtml(clienteNombre)}
-        </div>
-        ${ticketRef ? `
-          <div class="factura-preview-client" style="margin-top:-2px;">
-            <strong>Ticket origen:</strong> ${escapeHtml(ticketRef)}
-          </div>
-        ` : ''}
-        <div class="table-container">
-          <table class="doc-view-table factura-preview-table">
-            <thead>
-              <tr>
-                <th>Producto</th>
-                <th>Cant.</th>
-                <th>P. Unit.</th>
-                <th>IVA</th>
-                <th>Importe</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${renderLineasDocumento(factura?.lineas)}
-            </tbody>
-          </table>
-        </div>
-        <div class="doc-view-totales">
-          <div><span>Subtotal</span><strong>${formatEuro(subtotal)}</strong></div>
-          <div><span>IVA</span><strong>${formatEuro(iva)}</strong></div>
-          <div class="doc-view-total-final"><span>Total</span><strong>${formatEuro(total)}</strong></div>
-        </div>
-        ${leyendaVerifactu ? `
-          <div class="factura-verifactu-footer">
-            <div class="verifactu-leyenda">${escapeHtml(leyendaVerifactu)}</div>
-            ${hashFiscal ? `<div class="verifactu-hash"><small>Hash fiscal: ${escapeHtml(hashFiscal.substring(0, 32))}...</small></div>` : ''}
-            ${qrData ? `<div class="verifactu-qr"><small>QR: ${escapeHtml(qrData.substring(0, 60))}...</small></div>` : ''}
-          </div>
-        ` : ''}
+    const verifactuHtml = leyendaVerifactu ? `
+      <div class="fac-a4-verifactu">
+        <div><strong>${escapeHtml(leyendaVerifactu)}</strong></div>
+        ${hashFiscal ? `<div>Hash fiscal: ${escapeHtml(hashFiscal.substring(0, 48))}...</div>` : ''}
+        ${qrData ? `<div>QR fiscal: ${escapeHtml(qrData.substring(0, 80))}...</div>` : ''}
       </div>
+    ` : '';
+
+    return `
+      ${getFacturaA4Style(false)}
+      ${buildFacturaA4Inner(factura, { verifactuHtml, estado })}
     `;
   }
 
@@ -679,20 +931,7 @@
   }
 
   async function buildFacturaDocumentHtml(factura) {
-    const subtotal = Number(factura?.base !== undefined ? factura.base : (factura?.subtotal !== undefined ? factura.subtotal : 0));
-    const total = Number(factura?.total || 0);
-    const iva = Math.max(0, total - subtotal);
     const estado = String(factura?.estado || '-');
-    const numero = String(factura?.numero || 'Factura');
-    const fecha = formatFecha(factura?.fechaHora);
-    const empresa = String(config?.nombreEmpresa || 'MRS_TPV');
-    const emailEmpresa = String(config?.email || '');
-    const mostrarLogo = config?.facturaLogo !== false && !!config?.logoUrl;
-    const mostrarEmail = config?.facturaEmail !== false;
-    const mostrarRazonSocial = config?.facturaRazonSocial !== false;
-    const clienteNombre = getClienteNombre(factura?.cliente || (factura?.clienteId ? { id: factura.clienteId } : null));
-    const ticketRef = getTicketNumeroForFactura(factura);
-    const lineasHtml = renderLineasDocumento(factura?.lineas);
     
     let qrData = '';
     let leyendaVerifactu = '';
@@ -707,68 +946,23 @@
       }
     }
 
+    const verifactuHtml = leyendaVerifactu ? `
+      <div class="fac-a4-verifactu">
+        <div><strong>${escapeHtml(leyendaVerifactu)}</strong></div>
+        ${hashFiscal ? `<div>Hash fiscal: ${escapeHtml(hashFiscal)}</div>` : ''}
+        ${qrData ? `<div>QR fiscal: ${escapeHtml(qrData)}</div>` : ''}
+      </div>
+    ` : '';
+
     return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>${escapeHtml(numero)}</title>
-  <style>
-    body{font-family:Arial,sans-serif;background:#efefef;margin:0;padding:24px;color:#111}
-    .factura{background:#fff;padding:28px 30px;margin:0 auto;max-width:860px}
-    .head{display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid #d7d7d7;padding-bottom:10px;margin-bottom:10px}
-    .head h1{margin:0;font-size:28px;line-height:1}
-    .meta{text-align:right;font-size:12px;line-height:1.5}
-    .cliente{background:#111;color:#fff;padding:8px 10px;border-radius:3px;margin-bottom:10px}
-    table{width:100%;border-collapse:collapse}
-    th{background:#111;color:#fff;padding:9px 8px;font-size:12px}
-    td{padding:8px;border-bottom:1px solid #ddd;font-size:12px}
-    td:nth-child(2),td:nth-child(3),td:nth-child(4),td:nth-child(5){text-align:center}
-    .totales{margin-left:auto;min-width:240px;margin-top:14px}
-    .totales > div{display:flex;justify-content:space-between;border-bottom:1px solid #222;padding:5px 0}
-    .total{font-size:17px;font-weight:700}
-  </style>
+  <title>${escapeHtml(String(factura?.numero || 'Factura'))}</title>
+  ${getFacturaA4Style(true)}
 </head>
 <body>
-  <section class="factura">
-    <div class="head">
-      <div>
-        ${mostrarLogo ? `<div style="margin-bottom:8px"><img src="${escapeHtml(config?.logoUrl || '')}" alt="Logo" style="max-width:180px;max-height:70px;object-fit:contain"></div>` : ''}
-        ${mostrarRazonSocial ? `<h1>${escapeHtml(empresa)}</h1>` : ''}
-        ${mostrarEmail && emailEmpresa ? `<div style="margin-top:4px;font-size:12px">${escapeHtml(emailEmpresa)}</div>` : ''}
-      </div>
-      <div class="meta">
-        <div><strong>Factura:</strong> ${escapeHtml(numero)}</div>
-        <div><strong>Fecha:</strong> ${escapeHtml(fecha)}</div>
-        <div><strong>Estado:</strong> ${escapeHtml(estado)}</div>
-      </div>
-    </div>
-    <div class="cliente"><strong>Cliente:</strong> ${escapeHtml(clienteNombre)}</div>
-    ${ticketRef ? `<div class="cliente"><strong>Ticket origen:</strong> ${escapeHtml(ticketRef)}</div>` : ''}
-    <table>
-      <thead>
-        <tr>
-          <th>Producto</th>
-          <th>Cant.</th>
-          <th>P. Unit.</th>
-          <th>IVA</th>
-          <th>Importe</th>
-        </tr>
-      </thead>
-      <tbody>${lineasHtml}</tbody>
-    </table>
-    <div class="totales">
-      <div><span>Subtotal</span><strong>${formatEuro(subtotal)}</strong></div>
-      <div><span>IVA</span><strong>${formatEuro(iva)}</strong></div>
-      <div class="total"><span>Total</span><strong>${formatEuro(total)}</strong></div>
-    </div>
-    ${leyendaVerifactu ? `
-      <div style="margin-top:20px;padding-top:15px;border-top:1px solid #ddd;text-align:center;font-size:11px;color:#666">
-        <div style="margin-bottom:5px"><strong>${escapeHtml(leyendaVerifactu)}</strong></div>
-        ${hashFiscal ? `<div style="margin-top:5px;font-family:monospace;font-size:9px;word-break:break-all">Hash: ${escapeHtml(hashFiscal)}</div>` : ''}
-        ${qrData ? `<div style="margin-top:5px;font-family:monospace;font-size:9px;word-break:break-all">QR: ${escapeHtml(qrData)}</div>` : ''}
-      </div>
-    ` : ''}
-  </section>
+  ${buildFacturaA4Inner(factura, { verifactuHtml, estado })}
 </body>
 </html>`;
   }

@@ -9,6 +9,7 @@
   let categorias = [];
   let productos = [];
   let currentSession = null;
+  let cambiosStockPendientes = {};
 
   // Inicializar módulo
   async function init() {
@@ -42,6 +43,7 @@
         <div class="productos-tabs">
           <button class="tab-btn active" data-tab="categorias">Categorías</button>
           <button class="tab-btn" data-tab="productos">Productos</button>
+          <button class="tab-btn" data-tab="stock">Stock</button>
         </div>
 
         <div class="tab-content active" id="tab-categorias">
@@ -72,11 +74,38 @@
             </table>
           </div>
         </div>
+
+        <div class="tab-content" id="tab-stock">
+          <div class="module-header">
+            <h3>Stock</h3>
+            ${canEdit ? '<button class="btn btn-primary" id="btn-guardar-stock-in-productos">Guardar Cambios</button>' : ''}
+          </div>
+          <div class="stock-filters">
+            <select id="filter-categoria-stock-in-productos">
+              <option value="">Todas las categorías</option>
+            </select>
+            <input type="text" id="search-stock-in-productos" placeholder="Buscar producto...">
+          </div>
+          <div class="table-container">
+            <table id="stock-table-in-productos">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Categoría</th>
+                  <th>Stock Actual</th>
+                  ${canEdit ? '<th>Acciones</th>' : ''}
+                </tr>
+              </thead>
+              <tbody id="stock-tbody-in-productos"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     `;
 
     renderCategorias();
     renderProductos();
+    renderStockTab();
     setupTabs();
   }
 
@@ -132,7 +161,7 @@
     const canEdit = currentSession?.role === 'administrador' || currentSession?.role === 'tecnico';
 
     if (productosFiltrados.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty-message">No hay productos</td></tr>';
+      tbody.innerHTML = `<tr><td colspan="${canEdit ? 7 : 6}" class="empty-message">No hay productos</td></tr>`;
       return;
     }
 
@@ -163,7 +192,7 @@
 
   // Configurar tabs
   function setupTabs() {
-    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabBtns = document.querySelectorAll('.productos-tabs .tab-btn');
     tabBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         const tab = btn.dataset.tab;
@@ -171,7 +200,7 @@
         tabBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         
-        document.querySelectorAll('.tab-content').forEach(content => {
+        document.querySelectorAll('.productos-module .tab-content').forEach(content => {
           content.classList.remove('active');
         });
         document.getElementById(`tab-${tab}`).classList.add('active');
@@ -182,20 +211,6 @@
   // Configurar event listeners
   function setupEventListeners() {
     const canEdit = currentSession?.role === 'administrador' || currentSession?.role === 'tecnico';
-    
-    if (!canEdit) return;
-
-    // Nueva categoría
-    const btnNuevaCategoria = document.getElementById('btn-nueva-categoria');
-    if (btnNuevaCategoria) {
-      btnNuevaCategoria.addEventListener('click', () => mostrarModalCategoria());
-    }
-
-    // Nuevo producto
-    const btnNuevoProducto = document.getElementById('btn-nuevo-producto');
-    if (btnNuevoProducto) {
-      btnNuevoProducto.addEventListener('click', () => mostrarModalProducto());
-    }
 
     // Filtro categoría
     const filterCategoria = document.getElementById('filter-categoria');
@@ -218,6 +233,183 @@
         renderProductos(filterCategoria?.value || '', e.target.value);
       });
     }
+
+    // Filtros de stock dentro de productos
+    setupStockFilters();
+
+    if (!canEdit) return;
+
+    // Nueva categoría
+    const btnNuevaCategoria = document.getElementById('btn-nueva-categoria');
+    if (btnNuevaCategoria) {
+      btnNuevaCategoria.addEventListener('click', () => mostrarModalCategoria());
+    }
+
+    // Nuevo producto
+    const btnNuevoProducto = document.getElementById('btn-nuevo-producto');
+    if (btnNuevoProducto) {
+      btnNuevoProducto.addEventListener('click', () => mostrarModalProducto());
+    }
+
+    // Guardar stock
+    const btnGuardarStock = document.getElementById('btn-guardar-stock-in-productos');
+    if (btnGuardarStock) {
+      btnGuardarStock.addEventListener('click', guardarCambiosStock);
+    }
+  }
+
+  // Renderizar stock (dentro de Productos)
+  function renderStockTab(categoriaId = '', searchTerm = '') {
+    const tbody = document.getElementById('stock-tbody-in-productos');
+    if (!tbody) return;
+
+    let productosFiltrados = productos;
+    if (categoriaId) {
+      productosFiltrados = productosFiltrados.filter(p => p.categoriaId === categoriaId);
+    }
+    if (searchTerm) {
+      const term = String(searchTerm || '').toLowerCase();
+      productosFiltrados = productosFiltrados.filter(p => (p.nombre || '').toLowerCase().includes(term));
+    }
+
+    const canEdit = currentSession?.role === 'administrador' || currentSession?.role === 'tecnico';
+
+    if (productosFiltrados.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="${canEdit ? 4 : 3}" class="empty-message">No hay productos</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = productosFiltrados.map(prod => {
+      const categoria = categorias.find(c => c.id === prod.categoriaId);
+      const stockActual = cambiosStockPendientes[prod.id] !== undefined
+        ? cambiosStockPendientes[prod.id]
+        : (prod.stock || 0);
+      const stockClass = stockActual === 0 ? 'stock-zero' : (stockActual <= 3 ? 'stock-bajo' : '');
+
+      return `
+        <tr class="${stockClass}">
+          <td>${escapeHtml(prod.nombre)}</td>
+          <td>${categoria ? escapeHtml(categoria.nombre) : '-'}</td>
+          <td class="stock-value">${stockActual}</td>
+          ${canEdit ? `
+            <td>
+              <div class="stock-controls">
+                <button class="btn-stock btn-minus" data-producto-id="${prod.id}">-</button>
+                <input type="number" class="stock-input" data-producto-id="${prod.id}" value="${stockActual}" min="0">
+                <button class="btn-stock btn-plus" data-producto-id="${prod.id}">+</button>
+                <button class="btn-stock btn-direct" data-producto-id="${prod.id}" title="Ajuste directo">📝</button>
+              </div>
+            </td>
+          ` : ''}
+        </tr>
+      `;
+    }).join('');
+
+    if (!canEdit) return;
+
+    tbody.querySelectorAll('.btn-minus').forEach(btn => {
+      btn.addEventListener('click', (e) => ajustarStock(e.target.dataset.productoId, -1));
+    });
+    tbody.querySelectorAll('.btn-plus').forEach(btn => {
+      btn.addEventListener('click', (e) => ajustarStock(e.target.dataset.productoId, 1));
+    });
+    tbody.querySelectorAll('.stock-input').forEach(input => {
+      input.addEventListener('change', (e) => {
+        const productoId = e.target.dataset.productoId;
+        const nuevoStock = parseInt(e.target.value, 10) || 0;
+        cambiosStockPendientes[productoId] = Math.max(0, nuevoStock);
+        renderStockTab(
+          document.getElementById('filter-categoria-stock-in-productos')?.value || '',
+          document.getElementById('search-stock-in-productos')?.value || ''
+        );
+      });
+    });
+    tbody.querySelectorAll('.btn-direct').forEach(btn => {
+      btn.addEventListener('click', (e) => ajusteDirectoStock(e.target.dataset.productoId));
+    });
+  }
+
+  function setupStockFilters() {
+    const filterCategoria = document.getElementById('filter-categoria-stock-in-productos');
+    if (filterCategoria && filterCategoria.options.length <= 1) {
+      categorias.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat.id;
+        option.textContent = cat.nombre;
+        filterCategoria.appendChild(option);
+      });
+      filterCategoria.addEventListener('change', (e) => {
+        renderStockTab(e.target.value, document.getElementById('search-stock-in-productos')?.value || '');
+      });
+    }
+
+    const searchStock = document.getElementById('search-stock-in-productos');
+    if (searchStock) {
+      searchStock.addEventListener('input', (e) => {
+        renderStockTab(filterCategoria?.value || '', e.target.value);
+      });
+    }
+  }
+
+  function ajustarStock(productoId, delta) {
+    const producto = productos.find(p => p.id === productoId);
+    if (!producto) return;
+    const stockActual = cambiosStockPendientes[productoId] !== undefined
+      ? cambiosStockPendientes[productoId]
+      : (producto.stock || 0);
+    cambiosStockPendientes[productoId] = Math.max(0, stockActual + delta);
+    renderStockTab(
+      document.getElementById('filter-categoria-stock-in-productos')?.value || '',
+      document.getElementById('search-stock-in-productos')?.value || ''
+    );
+  }
+
+  function ajusteDirectoStock(productoId) {
+    const producto = productos.find(p => p.id === productoId);
+    if (!producto) return;
+    const stockActual = cambiosStockPendientes[productoId] !== undefined
+      ? cambiosStockPendientes[productoId]
+      : (producto.stock || 0);
+    const nuevoStock = prompt(`Nuevo stock para "${producto.nombre}":`, stockActual);
+    if (nuevoStock === null) return;
+    const stock = parseInt(nuevoStock, 10);
+    if (!Number.isFinite(stock) || stock < 0) {
+      alert('Introduce un número válido mayor o igual a 0');
+      return;
+    }
+    cambiosStockPendientes[productoId] = stock;
+    renderStockTab(
+      document.getElementById('filter-categoria-stock-in-productos')?.value || '',
+      document.getElementById('search-stock-in-productos')?.value || ''
+    );
+  }
+
+  async function guardarCambiosStock() {
+    const cambiosIds = Object.keys(cambiosStockPendientes);
+    if (cambiosIds.length === 0) {
+      alert('No hay cambios pendientes de stock');
+      return;
+    }
+    if (!confirm(`¿Guardar ${cambiosIds.length} cambio(s) de stock?`)) return;
+
+    cambiosIds.forEach((productoId) => {
+      const producto = productos.find(p => p.id === productoId);
+      if (producto) {
+        producto.stock = cambiosStockPendientes[productoId];
+      }
+    });
+
+    await window.mrsTpv.saveProductos(productos);
+    cambiosStockPendientes = {};
+    alert('Stock actualizado correctamente');
+    renderProductos(
+      document.getElementById('filter-categoria')?.value || '',
+      document.getElementById('search-producto')?.value || ''
+    );
+    renderStockTab(
+      document.getElementById('filter-categoria-stock-in-productos')?.value || '',
+      document.getElementById('search-stock-in-productos')?.value || ''
+    );
   }
 
   // Mostrar modal categoría
@@ -425,6 +617,10 @@
       await window.mrsTpv.saveProductos(productos);
       document.body.removeChild(modal);
       renderProductos();
+      renderStockTab(
+        document.getElementById('filter-categoria-stock-in-productos')?.value || '',
+        document.getElementById('search-stock-in-productos')?.value || ''
+      );
     });
   }
 
@@ -461,8 +657,13 @@
     if (!confirm(`¿Eliminar el producto "${producto.nombre}"?`)) return;
 
     productos = productos.filter(p => p.id !== productoId);
+    delete cambiosStockPendientes[productoId];
     await window.mrsTpv.saveProductos(productos);
     renderProductos();
+    renderStockTab(
+      document.getElementById('filter-categoria-stock-in-productos')?.value || '',
+      document.getElementById('search-stock-in-productos')?.value || ''
+    );
   };
 
   // Utilidades

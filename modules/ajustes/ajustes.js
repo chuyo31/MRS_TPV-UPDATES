@@ -339,6 +339,21 @@
             <textarea id="declaracion-deposito" rows="4" placeholder="Texto que aparecerá en el resguardo de reparación...">${escapeHtml(config?.declaracionDeposito || '')}</textarea>
             <button type="button" class="btn btn-ghost btn-sm mt-1" id="btn-restaurar-declaracion">Restaurar texto por defecto</button>
           </div>
+          <div class="form-group">
+            <label>Nota legal de factura</label>
+            <textarea id="factura-nota-legal" rows="3" placeholder="Texto legal que aparecerá al pie de la factura...">${escapeHtml(config?.facturaNotaLegal || '')}</textarea>
+            <button type="button" class="btn btn-ghost btn-sm mt-1" id="btn-restaurar-factura-nota-legal">Restaurar texto por defecto</button>
+          </div>
+          <div class="form-group">
+            <label>Nota legal de presupuesto</label>
+            <textarea id="presupuesto-nota-legal" rows="3" placeholder="Texto legal que aparecerá al pie del presupuesto...">${escapeHtml(config?.presupuestoNotaLegal || '')}</textarea>
+            <button type="button" class="btn btn-ghost btn-sm mt-1" id="btn-restaurar-presupuesto-nota-legal">Restaurar texto por defecto</button>
+          </div>
+          <div class="form-group">
+            <label>Nota legal de albarán</label>
+            <textarea id="albaran-nota-legal" rows="3" placeholder="Texto legal que aparecerá al pie del albarán...">${escapeHtml(config?.albaranNotaLegal || '')}</textarea>
+            <button type="button" class="btn btn-ghost btn-sm mt-1" id="btn-restaurar-albaran-nota-legal">Restaurar texto por defecto</button>
+          </div>
         </div>
 
         <div class="form-actions">
@@ -547,6 +562,10 @@
 
   async function setupTabEmpresa() {
     const defaultDeclaracion = 'Acepto dejar el dispositivo indicado para su revisión y/o reparación en la empresa. Autorizo la manipulación técnica necesaria para diagnóstico y reparación.';
+    const defaultFacturaNotaLegal = 'Nota legal: Este documento tiene validez fiscal y mercantil. Salvo error tipografico u omision. Para cualquier aclaracion, contacte con la empresa emisora.';
+    const defaultPresupuestoNotaLegal = 'Validez del presupuesto: 15 dias desde su fecha de emision. Los precios incluyen impuestos salvo indicacion en contrario. Una vez aceptado, no se admiten cambios sin autorizacion expresa del cliente.';
+    const defaultAlbaranNotaLegal = 'Condiciones del albaran: La firma del cliente acredita la entrega/recepcion del material o servicio descrito. Cualquier incidencia debe comunicarse en un plazo maximo de 24 horas.';
+    const formEmpresa = document.getElementById('form-empresa');
 
     document.getElementById('btn-select-logo')?.addEventListener('click', async () => {
       const logoUrl = await window.mrsTpv.selectLogo();
@@ -566,27 +585,49 @@
       const input = document.getElementById('declaracion-deposito');
       if (input) input.value = defaultDeclaracion;
     });
+    document.getElementById('btn-restaurar-factura-nota-legal')?.addEventListener('click', () => {
+      const input = document.getElementById('factura-nota-legal');
+      if (input) input.value = defaultFacturaNotaLegal;
+    });
+    document.getElementById('btn-restaurar-presupuesto-nota-legal')?.addEventListener('click', () => {
+      const input = document.getElementById('presupuesto-nota-legal');
+      if (input) input.value = defaultPresupuestoNotaLegal;
+    });
+    document.getElementById('btn-restaurar-albaran-nota-legal')?.addEventListener('click', () => {
+      const input = document.getElementById('albaran-nota-legal');
+      if (input) input.value = defaultAlbaranNotaLegal;
+    });
 
-    document.getElementById('form-empresa')?.addEventListener('submit', async (e) => {
+    formEmpresa?.addEventListener('submit', async (e) => {
       e.preventDefault();
       
       // Asegurar que config existe y tiene todas las propiedades
       if (!config) config = {};
-      
-      config.nombreEmpresa = document.getElementById('nombre-empresa').value.trim();
-      config.cif = document.getElementById('cif').value.trim();
-      config.direccion = document.getElementById('direccion').value.trim();
-      config.telefono = document.getElementById('telefono').value.trim();
-      config.whatsapp = document.getElementById('whatsapp').value.trim();
-      config.email = document.getElementById('email').value.trim();
-      config.numeroCuenta = document.getElementById('iban').value.trim();
-      config.ivaDefecto = parseFloat(document.getElementById('iva-defecto').value) || 21;
-      config.declaracionDeposito = document.getElementById('declaracion-deposito').value.trim();
-      config.logoUrl = document.getElementById('logo-url').value.trim();
-      config.mostrarLogoEnBarra = document.getElementById('mostrar-logo-barra').checked;
+
+      const getVal = (selector) => String(formEmpresa.querySelector(selector)?.value || '').trim();
+      const getChecked = (selector) => !!formEmpresa.querySelector(selector)?.checked;
+
+      config.nombreEmpresa = getVal('#nombre-empresa');
+      config.cif = getVal('#cif');
+      config.direccion = getVal('#direccion');
+      config.telefono = getVal('#telefono');
+      config.whatsapp = getVal('#whatsapp');
+      config.email = getVal('#email');
+      config.numeroCuenta = getVal('#iban');
+      config.ivaDefecto = parseFloat(getVal('#iva-defecto')) || 21;
+      config.declaracionDeposito = getVal('#declaracion-deposito');
+      config.facturaNotaLegal = getVal('#factura-nota-legal');
+      config.presupuestoNotaLegal = getVal('#presupuesto-nota-legal');
+      config.albaranNotaLegal = getVal('#albaran-nota-legal');
+      config.logoUrl = getVal('#logo-url');
+      config.mostrarLogoEnBarra = getChecked('#mostrar-logo-barra');
 
       try {
-        await window.mrsTpv.setConfig(config);
+        const ok = await window.mrsTpv.setConfig(config);
+        if (!ok) {
+          alert('No se pudo guardar la configuración de empresa.');
+          return;
+        }
         // Recargar config después de guardar para asegurar persistencia
         config = await window.mrsTpv.getConfig() || config;
         alert('Configuración de empresa guardada correctamente');
@@ -598,6 +639,8 @@
   }
 
   async function setupTabTienda() {
+    const formTienda = document.getElementById('form-tienda');
+
     // Cargar impresoras
     const impresoras = await window.mrsTpv.getPrinters();
     const select = document.getElementById('impresora-termica');
@@ -613,19 +656,34 @@
       });
     }
 
-    document.getElementById('form-tienda')?.addEventListener('submit', async (e) => {
+    formTienda?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      config.imagenesEnCaja = document.getElementById('imagenes-caja').value;
-      config.ticketLogo = document.getElementById('ticket-logo').checked;
-      config.ticketEmail = document.getElementById('ticket-email').checked;
-      config.ticketRazonSocial = document.getElementById('ticket-razon-social').checked;
-      config.facturaLogo = document.getElementById('factura-logo').checked;
-      config.facturaEmail = document.getElementById('factura-email').checked;
-      config.facturaRazonSocial = document.getElementById('factura-razon-social').checked;
-      config.impresoraTermica = document.getElementById('impresora-termica').value;
-      config.anchoPapel = parseInt(document.getElementById('ancho-papel').value) || 80;
+      if (!config) config = {};
+      const getVal = (selector) => String(formTienda.querySelector(selector)?.value || '').trim();
+      const getChecked = (selector) => !!formTienda.querySelector(selector)?.checked;
 
-      await window.mrsTpv.setConfig(config);
+      config.imagenesEnCaja = getVal('#imagenes-caja') || 'ambos';
+      config.ticketLogo = getChecked('#ticket-logo');
+      config.ticketEmail = getChecked('#ticket-email');
+      config.ticketRazonSocial = getChecked('#ticket-razon-social');
+      config.facturaLogo = getChecked('#factura-logo');
+      config.facturaEmail = getChecked('#factura-email');
+      config.facturaRazonSocial = getChecked('#factura-razon-social');
+      config.impresoraTermica = getVal('#impresora-termica');
+      config.anchoPapel = parseInt(getVal('#ancho-papel'), 10) || 80;
+
+      const ok = await window.mrsTpv.setConfig(config);
+      if (!ok) {
+        alert('No se pudo guardar la configuración de tienda.');
+        return;
+      }
+      config = await window.mrsTpv.getConfig() || config;
+      window.dispatchEvent(new CustomEvent('mrs:config-updated', {
+        detail: {
+          source: 'ajustes',
+          keys: ['imagenesEnCaja', 'ticketLogo', 'ticketEmail', 'ticketRazonSocial', 'facturaLogo', 'facturaEmail', 'facturaRazonSocial', 'impresoraTermica', 'anchoPapel']
+        }
+      }));
       alert('Configuración de tienda guardada');
     });
   }

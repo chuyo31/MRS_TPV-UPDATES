@@ -7,11 +7,11 @@ Sistema TPV desktop (Electron + PocketBase) para tienda y servicio técnico, con
 Versión funcional final con:
 
 - TPV de venta (`Caja`) con ticket e impresión
-- Gestión de clientes, productos, stock y usuarios
+- Gestión de clientes, productos (con pestaña de stock integrada) y usuarios
 - Módulo de reparaciones con pedidos, notas y WhatsApp
 - Gestión comercial (`Presupuestos`, `Albaranes`, `Facturas`)
 - Historial con relaciones Ticket <-> Factura
-- Exportación PDF/CSV
+- Exportación PDF/CSV integrada en `Gestión > Exportación`
 - Base Verifactu implementada (sin remisión AEAT)
 
 ## Stack técnico
@@ -54,13 +54,11 @@ npm run build
 ## Módulos
 
 - `Caja`: venta rápida, categorías, búsqueda producto, ticket, cobro
-- `Productos`: ABM productos/categorías
-- `Stock`: ajustes y control
+- `Productos`: ABM productos/categorías + pestaña `Stock` integrada
 - `Clientes`: ABM clientes
 - `Reparaciones`: órdenes, estados, notas, pedidos, historial pedidos
-- `Gestión`: presupuestos/albaranes/facturas manuales
+- `Gestión`: presupuestos/albaranes/facturas manuales + pestaña `Exportación`
 - `Historial`: tickets/facturas, impresión/PDF, rectificativas, trazabilidad
-- `Documentos`: exportación masiva PDF/CSV
 - `Ajustes`: empresa, tienda, usuarios, distribuidores, sistema
 - `Verifactu Core`: registros fiscales, encadenado hash, QR y auditoría interna
 
@@ -78,6 +76,7 @@ npm run build
 - Bloqueo de doble facturación por ticket
 - Rectificación única por factura original
 - Vista e impresión profesional de facturas
+- Cierre de caja con auditoría fiscal (apertura/cierre) compatible con Verifactu
 
 ### Reparaciones
 
@@ -85,15 +84,27 @@ npm run build
 - Panel redimensionable y layout adaptativo
 - Pedidos a distribuidores por WhatsApp
 - Historial de pedidos enviados (últimos 5 días por defecto + buscador)
+- Opción de limpieza de bandeja semanal sin borrar histórico real
+- Botón para mostrar historial completo y acción "Ver orden"
 - Notas de cliente con envío por WhatsApp
 - Impresión y envío de resguardo por WhatsApp
+- Resguardo impreso adaptado a tema claro/oscuro (bordes, logo y sello)
 
 ### Configuración avanzada
 
 - Logo dinámico con inversión según tema
 - Checkboxes de contenido para ticket y factura
 - Texto editable de declaración de depósito (resguardo)
+- Textos legales editables para factura, presupuesto y albarán (con restaurar por defecto)
 - Gestión de distribuidores desde `Ajustes`
+- Control de imágenes en caja (categorías/productos) desde `Ajustes > Tienda`
+
+### Plantillas A4 y documentos
+
+- Factura A4 profesional con impresión y exportación PDF
+- Presupuesto A4 profesional con impresión y exportación PDF
+- Albarán A4 profesional con impresión y exportación PDF
+- Nota legal configurable por tipo de documento
 
 ## Verifactu (alcance actual)
 
@@ -105,6 +116,7 @@ Implementado:
 - Datos QR fiscales
 - Audit trail de eventos fiscales
 - Bloqueo de edición directa de facturas emitidas
+- Registro de eventos de caja (apertura/cierre) en auditoría fiscal
 
 No implementado (a propósito):
 

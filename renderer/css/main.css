@@ -323,6 +323,50 @@ body {
   gap: 16px;
 }
 
+.btn-icon-logout {
+  min-width: 40px;
+  width: 40px;
+  height: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon-ajustes {
+  min-width: 34px;
+  width: 34px;
+  height: 34px;
+  padding: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-icon {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.settings-gear-fill {
+  fill: #96a0aa;
+}
+
+.settings-center-fill {
+  fill: #1f6fb8;
+}
+
+.logout-icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .user-info {
   display: flex;
   align-items: center;
@@ -1021,6 +1065,83 @@ tbody tr:hover {
 .ticket-actions .btn {
   border-radius: 8px;
   min-height: 34px;
+}
+
+/* Ajustes de legibilidad para Caja en modo claro */
+[data-theme="light"] .caja-panel,
+:root:not([data-theme="dark"]) .caja-panel {
+  background: #f8fafc;
+}
+
+[data-theme="light"] .panel-header,
+:root:not([data-theme="dark"]) .panel-header {
+  background: #ffffff;
+}
+
+[data-theme="light"] .categoria-actual,
+:root:not([data-theme="dark"]) .categoria-actual {
+  color: #475569;
+}
+
+[data-theme="light"] .ticket-content,
+:root:not([data-theme="dark"]) .ticket-content {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+[data-theme="light"] .ticket-lineas,
+:root:not([data-theme="dark"]) .ticket-lineas {
+  background: #ffffff;
+  border: 1px solid #dbe2ea;
+}
+
+[data-theme="light"] .ticket-linea,
+:root:not([data-theme="dark"]) .ticket-linea {
+  border-bottom-color: #e2e8f0;
+}
+
+[data-theme="light"] .ticket-linea:hover,
+:root:not([data-theme="dark"]) .ticket-linea:hover {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+[data-theme="light"] .linea-subtotal,
+:root:not([data-theme="dark"]) .linea-subtotal {
+  color: #1d4ed8;
+}
+
+[data-theme="light"] .ticket-totales,
+[data-theme="light"] .ticket-cliente,
+[data-theme="light"] .ticket-pago,
+:root:not([data-theme="dark"]) .ticket-totales,
+:root:not([data-theme="dark"]) .ticket-cliente,
+:root:not([data-theme="dark"]) .ticket-pago {
+  background: #ffffff;
+  border: 1px solid #dbe2ea;
+}
+
+[data-theme="light"] .total-line,
+[data-theme="light"] .ticket-cliente label,
+[data-theme="light"] .ticket-pago label,
+:root:not([data-theme="dark"]) .total-line,
+:root:not([data-theme="dark"]) .ticket-cliente label,
+:root:not([data-theme="dark"]) .ticket-pago label {
+  color: #334155;
+}
+
+[data-theme="light"] .total-final,
+:root:not([data-theme="dark"]) .total-final {
+  text-shadow: none;
+}
+
+[data-theme="light"] .productos-search-input,
+:root:not([data-theme="dark"]) .productos-search-input {
+  border-color: #cbd5e1;
+  background: #ffffff;
+}
+
+[data-theme="light"] .productos-search-input::placeholder,
+:root:not([data-theme="dark"]) .productos-search-input::placeholder {
+  color: #94a3b8;
 }
 
 /* Módulo Productos */

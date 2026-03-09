@@ -10,6 +10,7 @@
   let productos = [];
   let cajaActual = null;
   let clientes = [];
+  let config = {};
   let ticket = {
     lineas: [],
     descuentoPct: 0,
@@ -25,13 +26,19 @@
   let productSearchTerm = '';
   let activeResize = null;
   let documentResizeHandlersBound = false;
+  let configUpdateListenerBound = false;
 
   // Inicializar módulo
   async function init() {
+    if (window.VerifactuCore) {
+      await window.VerifactuCore.init();
+    }
     await loadData();
     restorePanelSizes();
     render();
     setupEventListeners();
+    bindConfigUpdateListener();
+    updateCajaStateUI();
   }
 
   // Cargar datos
@@ -40,10 +47,12 @@
     productos = await window.mrsTpv.getProductos() || [];
     cajaActual = await window.mrsTpv.getCajaActual();
     clientes = await window.mrsTpv.getClientes() || [];
+    config = await window.mrsTpv.getConfig() || {};
 
     // Verificar inicio de caja
     const hoy = new Date().toISOString().split('T')[0];
-    if (!cajaActual || cajaActual.fecha !== hoy || cajaActual.cerrada) {
+    // Si la caja está cerrada en el mismo día, no forzar reapertura automática.
+    if (!cajaActual || cajaActual.fecha !== hoy) {
       await showInicioCaja();
     }
   }
@@ -126,6 +135,7 @@
             <div class="ticket-actions">
               <button class="btn btn-primary btn-block" id="btn-cobrar">Cobrar</button>
               <button class="btn btn-ghost btn-block" id="btn-limpiar">Limpiar ticket</button>
+              <button class="btn btn-ghost btn-block" id="btn-cerrar-caja">Cerrar caja</button>
             </div>
           </div>
         </div>
@@ -153,9 +163,11 @@
   function renderCategorias() {
     const grid = document.getElementById('categorias-grid');
     if (!grid) return;
+    const mostrarImagenes = getImagenesEnCajaMode();
+    const mostrarCategoria = mostrarImagenes === 'ambos' || mostrarImagenes === 'categorias';
 
     grid.innerHTML = categorias.map(cat => {
-      const imageHtml = cat.imagenUrl
+      const imageHtml = (mostrarCategoria && cat.imagenUrl)
         ? `<img src="${cat.imagenUrl}" alt="${escapeHtml(cat.nombre)}">`
         : `<div class="categoria-placeholder"></div>`;
       return `
@@ -195,19 +207,22 @@
     if (!grid) return;
 
     const productosFiltrados = getFilteredProductos(categoriaId, searchTerm);
+    const cajaCerrada = isCajaCerrada();
+    const mostrarImagenes = getImagenesEnCajaMode();
+    const mostrarProducto = mostrarImagenes === 'ambos' || mostrarImagenes === 'productos';
 
     grid.innerHTML = productosFiltrados.map(prod => {
       const stock = prod.stock || 0;
       const stockClass = stock === 0 ? 'sin-stock' : (stock <= 3 ? 'stock-bajo' : '');
-      const disabled = stock === 0;
+      const disabled = stock === 0 || cajaCerrada;
       
       return `
         <div class="producto-card ${stockClass} ${disabled ? 'disabled' : ''}" data-producto-id="${prod.id}">
-          ${prod.imagenUrl ? `<img src="${prod.imagenUrl}" alt="${prod.nombre}">` : ''}
+          ${(mostrarProducto && prod.imagenUrl) ? `<img src="${prod.imagenUrl}" alt="${prod.nombre}">` : ''}
           <div class="producto-info">
             <div class="producto-nombre">${escapeHtml(prod.nombre)}</div>
             <div class="producto-precio">${formatEuro(prod.precio || 0)}</div>
-            <div class="producto-stock">${stock > 0 ? `${stock} disponible` : 'Sin stock'}</div>
+            <div class="producto-stock">${cajaCerrada ? 'Caja cerrada' : (stock > 0 ? `${stock} disponible` : 'Sin stock')}</div>
           </div>
         </div>
       `;
@@ -226,6 +241,7 @@
   function renderTicket() {
     const lineasDiv = document.getElementById('ticket-lineas');
     if (!lineasDiv) return;
+    const cajaCerrada = isCajaCerrada();
 
     lineasDiv.innerHTML = ticket.lineas.map((linea, index) => {
       const subtotal = (linea.precio || 0) * (linea.cantidad || 1);
@@ -235,10 +251,10 @@
             <div class="linea-nombre">${escapeHtml(linea.nombre)}</div>
           </div>
           <div class="linea-controls">
-            <button class="btn-cantidad btn-cantidad-minus" data-index="${index}" title="Restar">-</button>
-            <input type="number" class="linea-cantidad" value="${linea.cantidad}" min="1" data-index="${index}">
-            <button class="btn-cantidad btn-cantidad-plus" data-index="${index}" title="Sumar">+</button>
-            <button class="btn-eliminar-linea" data-index="${index}">×</button>
+            <button class="btn-cantidad btn-cantidad-minus" data-index="${index}" title="Restar" ${cajaCerrada ? 'disabled' : ''}>-</button>
+            <input type="number" class="linea-cantidad" value="${linea.cantidad}" min="1" data-index="${index}" ${cajaCerrada ? 'disabled' : ''}>
+            <button class="btn-cantidad btn-cantidad-plus" data-index="${index}" title="Sumar" ${cajaCerrada ? 'disabled' : ''}>+</button>
+            <button class="btn-eliminar-linea" data-index="${index}" ${cajaCerrada ? 'disabled' : ''}>×</button>
           </div>
           <div class="linea-subtotal">${formatEuro(subtotal)}</div>
         </div>
@@ -420,6 +436,7 @@
         renderProductos(currentCategoriaId, productSearchTerm);
       });
       productSearch.addEventListener('keydown', (e) => {
+        if (isCajaCerrada()) return;
         if (e.key !== 'Enter') return;
         e.preventDefault();
         const filtered = getFilteredProductos(currentCategoriaId, productSearchTerm);
@@ -465,8 +482,198 @@
       btnLimpiar.addEventListener('click', limpiarTicket);
     }
 
+    // Botón cerrar caja
+    const btnCerrarCaja = document.getElementById('btn-cerrar-caja');
+    if (btnCerrarCaja) {
+      btnCerrarCaja.addEventListener('click', cerrarCaja);
+    }
+
     // Resizers
     setupResizers();
+  }
+
+  function isCajaCerrada() {
+    return !!(cajaActual && cajaActual.cerrada);
+  }
+
+  function getImagenesEnCajaMode() {
+    const mode = String(config?.imagenesEnCaja || 'ambos').toLowerCase();
+    if (mode === 'categorias' || mode === 'productos' || mode === 'ninguno' || mode === 'ambos') {
+      return mode;
+    }
+    return 'ambos';
+  }
+
+  function bindConfigUpdateListener() {
+    if (configUpdateListenerBound) return;
+    configUpdateListenerBound = true;
+
+    window.addEventListener('mrs:config-updated', async () => {
+      const cajaVisible = !!document.querySelector('.caja-container');
+      if (!cajaVisible) return;
+      config = await window.mrsTpv.getConfig() || {};
+      renderCategorias();
+      renderProductos(currentCategoriaId, productSearchTerm);
+    });
+  }
+
+  function updateCajaStateUI() {
+    const cerrada = isCajaCerrada();
+    const btnCobrar = document.getElementById('btn-cobrar');
+    const btnLimpiar = document.getElementById('btn-limpiar');
+    const descuentoInput = document.getElementById('descuento-input');
+    const clienteSelect = document.getElementById('cliente-select');
+    const formaPagoSelect = document.getElementById('forma-pago-select');
+    const productSearch = document.getElementById('caja-product-search');
+
+    if (btnCobrar) {
+      btnCobrar.disabled = cerrada;
+      btnCobrar.textContent = cerrada ? 'Caja cerrada' : 'Cobrar';
+    }
+    if (btnLimpiar) btnLimpiar.disabled = cerrada;
+    if (descuentoInput) descuentoInput.disabled = cerrada;
+    if (clienteSelect) clienteSelect.disabled = cerrada;
+    if (formaPagoSelect) formaPagoSelect.disabled = cerrada;
+    if (productSearch) productSearch.disabled = cerrada;
+  }
+
+  function calcularResumenCaja() {
+    const ventas = Array.isArray(cajaActual?.ventas) ? cajaActual.ventas : [];
+    const porFormaPago = {
+      efectivo: 0,
+      tarjeta: 0,
+      transferencia: 0,
+      bizum: 0,
+      otro: 0
+    };
+    let totalVentas = 0;
+
+    ventas.forEach((v) => {
+      const total = Number(v?.total || 0);
+      totalVentas += total;
+      const forma = String(v?.formaPago || '').toLowerCase();
+      if (Object.prototype.hasOwnProperty.call(porFormaPago, forma)) {
+        porFormaPago[forma] += total;
+      } else {
+        porFormaPago.otro += total;
+      }
+    });
+
+    const importeInicial = Number(cajaActual?.importeInicial || 0);
+    const esperadoCaja = importeInicial + Number(porFormaPago.efectivo || 0);
+
+    return {
+      ventasCount: ventas.length,
+      totalVentas,
+      porFormaPago,
+      importeInicial,
+      esperadoCaja
+    };
+  }
+
+  async function cerrarCaja() {
+    if (!cajaActual) {
+      alert('No hay caja abierta.');
+      return;
+    }
+    if (isCajaCerrada()) {
+      alert('La caja ya está cerrada.');
+      return;
+    }
+
+    const resumen = calcularResumenCaja();
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="modal-title">Cierre de caja</h3>
+          <button class="modal-close" type="button">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group"><strong>Fecha:</strong> ${escapeHtml(cajaActual.fecha || '-')}</div>
+          <div class="form-group"><strong>Ventas:</strong> ${resumen.ventasCount}</div>
+          <div class="form-group"><strong>Total ventas:</strong> ${formatEuro(resumen.totalVentas)}</div>
+          <div class="form-group"><strong>Importe inicial:</strong> ${formatEuro(resumen.importeInicial)}</div>
+          <div class="form-group"><strong>Efectivo ventas:</strong> ${formatEuro(resumen.porFormaPago.efectivo)}</div>
+          <div class="form-group"><strong>Efectivo esperado en caja:</strong> ${formatEuro(resumen.esperadoCaja)}</div>
+          <hr>
+          <div class="form-group">
+            <label>Efectivo contado final *</label>
+            <input type="number" id="cierre-importe-contado" step="0.01" min="0" value="${resumen.esperadoCaja.toFixed(2)}">
+          </div>
+          <div class="form-group">
+            <label>Observaciones</label>
+            <textarea id="cierre-observaciones" rows="3" placeholder="Opcional"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" id="btn-cancelar-cierre" type="button">Cancelar</button>
+          <button class="btn btn-primary" id="btn-confirmar-cierre" type="button">Confirmar cierre</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    const closeModal = () => {
+      if (modal.parentNode) modal.parentNode.removeChild(modal);
+    };
+    modal.querySelector('#btn-cancelar-cierre')?.addEventListener('click', closeModal);
+    modal.querySelector('.modal-close')?.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    modal.querySelector('#btn-confirmar-cierre')?.addEventListener('click', async () => {
+      const inputContado = modal.querySelector('#cierre-importe-contado');
+      const inputObs = modal.querySelector('#cierre-observaciones');
+      const importeContado = Number(parseFloat(inputContado?.value || '0'));
+      if (!Number.isFinite(importeContado) || importeContado < 0) {
+        alert('Introduce un importe contado válido.');
+        return;
+      }
+
+      const session = await window.mrsTpv.getSession();
+      const cierre = {
+        fechaHora: new Date().toISOString(),
+        usuario: String(session?.nombre || session?.email || 'sistema'),
+        ventasCount: resumen.ventasCount,
+        totalVentas: resumen.totalVentas,
+        porFormaPago: resumen.porFormaPago,
+        importeInicial: resumen.importeInicial,
+        esperadoCaja: resumen.esperadoCaja,
+        importeContado,
+        descuadre: Number((importeContado - resumen.esperadoCaja).toFixed(2)),
+        observaciones: String(inputObs?.value || '').trim()
+      };
+
+      cajaActual.cerrada = true;
+      cajaActual.cierre = cierre;
+      await window.mrsTpv.saveCajaActual(cajaActual);
+
+      if (window.VerifactuCore?.registrarAuditTrail) {
+        await window.VerifactuCore.registrarAuditTrail(
+          'cierre_caja',
+          null,
+          null,
+          cierre.usuario,
+          {
+            fechaCaja: cajaActual.fecha,
+            ventasCount: cierre.ventasCount,
+            totalVentas: cierre.totalVentas,
+            esperadoCaja: cierre.esperadoCaja,
+            importeContado: cierre.importeContado,
+            descuadre: cierre.descuadre
+          }
+        );
+      }
+
+      closeModal();
+      updateCajaStateUI();
+      limpiarTicket();
+      renderProductos(currentCategoriaId, productSearchTerm);
+      alert(`Caja cerrada correctamente.\nDescuadre: ${formatEuro(cierre.descuadre)}`);
+    });
   }
 
   // Configurar redimensionadores de paneles
@@ -558,6 +765,10 @@
   async function procesarCobro() {
     const btnCobrar = document.getElementById('btn-cobrar');
     try {
+      if (isCajaCerrada()) {
+        alert('La caja está cerrada. Debes abrir una caja nueva para seguir cobrando.');
+        return;
+      }
       if (ticket.lineas.length === 0) {
         alert('El ticket está vacío');
         return;
@@ -708,6 +919,7 @@
       btnConfirmar.addEventListener('click', async () => {
         const importe = parseFloat(inputImporte.value) || 0;
         const hoy = new Date().toISOString().split('T')[0];
+        const session = await window.mrsTpv.getSession();
         
         cajaActual = {
           fecha: hoy,
@@ -717,6 +929,18 @@
         };
         
         await window.mrsTpv.saveCajaActual(cajaActual);
+        if (window.VerifactuCore?.registrarAuditTrail) {
+          await window.VerifactuCore.registrarAuditTrail(
+            'apertura_caja',
+            null,
+            null,
+            String(session?.nombre || session?.email || 'sistema'),
+            {
+              fechaCaja: hoy,
+              importeInicial: importe
+            }
+          );
+        }
         document.body.removeChild(modal);
         resolve();
       });

@@ -152,8 +152,19 @@
         <button id="btn-theme-toggle" class="btn btn-ghost" title="Cambiar tema">
           <span id="theme-icon">🌙</span>
         </button>
-        <button id="btn-ajustes" class="btn btn-ghost">Ajustes</button>
-        <button id="btn-logout" class="btn btn-ghost">Salir</button>
+        <button id="btn-ajustes" class="btn btn-ghost btn-icon-ajustes" title="Ajustes" aria-label="Ajustes">
+          <svg class="settings-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path class="settings-gear-fill" d="M19.14,12.94a7.35,7.35,0,0,0,.05-.94,7.35,7.35,0,0,0-.05-.94l2.03-1.58a.5.5,0,0,0,.12-.64l-1.92-3.32a.5.5,0,0,0-.6-.22l-2.39.96a7.28,7.28,0,0,0-1.63-.94L14.5,2.78a.5.5,0,0,0-.5-.41h-4a.5.5,0,0,0-.5.41L9.25,5.32a7.28,7.28,0,0,0-1.63.94l-2.39-.96a.5.5,0,0,0-.6.22L2.71,8.84a.5.5,0,0,0,.12.64l2.03,1.58a7.35,7.35,0,0,0-.05.94,7.35,7.35,0,0,0,.05.94L2.83,14.52a.5.5,0,0,0-.12.64l1.92,3.32a.5.5,0,0,0,.6.22l2.39-.96a7.28,7.28,0,0,0,1.63.94l.25,2.54a.5.5,0,0,0,.5.41h4a.5.5,0,0,0,.5-.41l.25-2.54a7.28,7.28,0,0,0,1.63-.94l2.39.96a.5.5,0,0,0,.6-.22l1.92-3.32a.5.5,0,0,0-.12-.64ZM12,16.2A4.2,4.2,0,1,1,16.2,12,4.2,4.2,0,0,1,12,16.2Z"></path>
+            <circle class="settings-center-fill" cx="12" cy="12" r="3.2"></circle>
+          </svg>
+        </button>
+        <button id="btn-logout" class="btn btn-ghost btn-icon-logout" title="Salir" aria-label="Salir">
+          <svg class="logout-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5"></path>
+            <path d="M13 8l4 4-4 4"></path>
+            <path d="M8 12h9"></path>
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -170,10 +181,6 @@
             <span class="nav-icon">📦</span>
             <span class="nav-label">Productos</span>
           </a>
-          <a href="#" class="nav-item" data-module="stock">
-            <span class="nav-icon">📊</span>
-            <span class="nav-label">Stock</span>
-          </a>
           <a href="#" class="nav-item" data-module="clientes">
             <span class="nav-icon">👥</span>
             <span class="nav-label">Clientes</span>
@@ -185,10 +192,6 @@
           <a href="#" class="nav-item" data-module="gestion">
             <span class="nav-icon">📄</span>
             <span class="nav-label">Gestión</span>
-          </a>
-          <a href="#" class="nav-item" data-module="documentos">
-            <span class="nav-icon">📑</span>
-            <span class="nav-label">Documentos</span>
           </a>
         </nav>
         <div class="sidebar-version" id="sidebar-version">V.0.0.0</div>

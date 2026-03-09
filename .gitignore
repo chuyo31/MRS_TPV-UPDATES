@@ -7,3 +7,4 @@ mrs_tpv_*.json
 pb_data/
 *.exe
 !database/pocketbase.exe
+savepoints/

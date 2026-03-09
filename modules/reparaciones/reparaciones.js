@@ -14,6 +14,7 @@
   let ordenSeleccionada = null;
   let filtroEstado = '';
   let historialBusqueda = '';
+  let historialMostrarTodo = false;
   let ordenesBusqueda = '';
 
   // Inicializar módulo
@@ -647,7 +648,7 @@
   }
 
   // Renderizar historial de pedidos enviados
-  function renderHistorialPedidos() {
+  function renderHistorialPedidos(restoreCursorPos = null) {
     const content = document.getElementById('historial-pedidos-content');
     if (!content) return;
 
@@ -655,7 +656,7 @@
       .filter(r =>
         r.requierePieza &&
         r.distribuidorId &&
-        r.pedidoEstado === 'enviado' &&
+        (r.pedidoEstado === 'enviado' || r.pedidoEstado === 'recibido') &&
         r.pedidoEnviadoAt
       )
       .sort((a, b) => new Date(b.pedidoEnviadoAt) - new Date(a.pedidoEnviadoAt));
@@ -677,16 +678,22 @@
         ].join(' ').toLowerCase();
         return campos.includes(termino);
       }
-      return (ahora - new Date(p.pedidoEnviadoAt).getTime()) <= limiteMs;
+      if (historialMostrarTodo) return true;
+      const enRango = (ahora - new Date(p.pedidoEnviadoAt).getTime()) <= limiteMs;
+      const visibleEnBandeja = !p.pedidoBandejaLimpia;
+      return enRango && visibleEnBandeja;
     });
 
-    const ocultosPorFecha = !termino
+    const ocultosPorFecha = !termino && !historialMostrarTodo
       ? pedidosEnviadosBase.filter((p) => (ahora - new Date(p.pedidoEnviadoAt).getTime()) > limiteMs).length
       : 0;
+    const ocultosPorLimpieza = !termino && !historialMostrarTodo
+      ? pedidosEnviadosBase.filter((p) => (ahora - new Date(p.pedidoEnviadoAt).getTime()) <= limiteMs && p.pedidoBandejaLimpia).length
+      : 0;
 
-    if (pedidosEnviados.length === 0) {
-      content.innerHTML = `
-        <div class="form-group" style="max-width: 420px; margin-bottom: 10px;">
+    const renderToolbarHtml = () => `
+      <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom:10px;">
+        <div class="form-group" style="max-width: 420px; margin: 0;">
           <input
             type="text"
             id="historial-pedidos-search"
@@ -694,13 +701,56 @@
             value="${escapeHtml(historialBusqueda)}"
           >
         </div>
-        <p class="empty-message">${termino ? 'No hay resultados para la búsqueda' : 'No hay pedidos enviados en los últimos 5 días'}</p>
-      `;
-      const searchInputEmpty = document.getElementById('historial-pedidos-search');
-      searchInputEmpty?.addEventListener('input', (e) => {
+        <button class="btn btn-ghost btn-sm" id="btn-historial-mostrar-todo">${historialMostrarTodo ? 'Mostrar bandeja semanal' : 'Mostrar todo el historial'}</button>
+        <div class="form-group" style="margin: 0;">
+          <label style="font-size:12px;">Limpiar</label>
+          <select id="historial-limpiar-tipo">
+            <option value="semana">Pedidos de esta semana</option>
+            <option value="recibidos">Solo pedidos recibidos</option>
+            <option value="todo">Todo el historial</option>
+          </select>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-limpiar-historial-pedidos">Limpiar</button>
+      </div>
+    `;
+
+    const bindToolbarEvents = () => {
+      const searchInput = document.getElementById('historial-pedidos-search');
+      searchInput?.addEventListener('input', (e) => {
         historialBusqueda = e.target.value || '';
+        const nextCursor = typeof e.target.selectionStart === 'number' ? e.target.selectionStart : null;
+        renderHistorialPedidos(nextCursor);
+      });
+
+      document.getElementById('btn-historial-mostrar-todo')?.addEventListener('click', () => {
+        historialMostrarTodo = !historialMostrarTodo;
         renderHistorialPedidos();
       });
+
+      document.getElementById('btn-limpiar-historial-pedidos')?.addEventListener('click', async () => {
+        const tipo = document.getElementById('historial-limpiar-tipo')?.value || 'semana';
+        await window.ReparacionesModule.limpiarHistorialPedidos(tipo);
+      });
+
+      if (typeof restoreCursorPos === 'number' && searchInput) {
+        requestAnimationFrame(() => {
+          const input = document.getElementById('historial-pedidos-search');
+          if (!input) return;
+          const pos = Math.max(0, Math.min(restoreCursorPos, input.value.length));
+          input.focus();
+          try {
+            input.setSelectionRange(pos, pos);
+          } catch (_) {}
+        });
+      }
+    };
+
+    if (pedidosEnviados.length === 0) {
+      content.innerHTML = `
+        ${renderToolbarHtml()}
+        <p class="empty-message">${termino ? 'No hay resultados para la búsqueda' : (historialMostrarTodo ? 'No hay pedidos en el historial' : 'No hay pedidos enviados en los últimos 5 días en la bandeja')}</p>
+      `;
+      bindToolbarEvents();
       return;
     }
 
@@ -712,15 +762,9 @@
     });
 
     content.innerHTML = `
-      <div class="form-group" style="max-width: 420px; margin-bottom: 10px;">
-        <input
-          type="text"
-          id="historial-pedidos-search"
-          placeholder="Buscar por pieza, distribuidor, orden, cliente o fecha..."
-          value="${escapeHtml(historialBusqueda)}"
-        >
-      </div>
+      ${renderToolbarHtml()}
       ${ocultosPorFecha > 0 ? `<p class="empty-message" style="margin-bottom:10px;">Hay ${ocultosPorFecha} pedidos más antiguos ocultos. Usa el buscador para verlos.</p>` : ''}
+      ${ocultosPorLimpieza > 0 ? `<p class="empty-message" style="margin-bottom:10px;">Hay ${ocultosPorLimpieza} pedidos limpiados de la bandeja. Usa el buscador para verlos.</p>` : ''}
       ${Object.entries(pedidosPorDia).map(([dia, pedidos]) => {
       const totalDia = pedidos.reduce((sum, p) => sum + ((p.costePieza || 0) * (p.piezaCantidad || 1)), 0);
       return `
@@ -738,6 +782,8 @@
                 <th>Cantidad</th>
                 <th>Coste u.</th>
                 <th>Total</th>
+                <th>Estado</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -746,6 +792,7 @@
                 const cantidad = p.piezaCantidad || 1;
                 const costeU = p.costePieza || 0;
                 const total = costeU * cantidad;
+                const estadoTxt = p.pedidoEstado === 'recibido' ? 'Recibido' : 'Enviado';
                 return `
                   <tr>
                     <td>${escapeHtml(new Date(p.pedidoEnviadoAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }))}</td>
@@ -754,6 +801,11 @@
                     <td>${cantidad}</td>
                     <td>${formatEuro(costeU)}</td>
                     <td><strong>${formatEuro(total)}</strong></td>
+                    <td>${estadoTxt}</td>
+                    <td>
+                      <button class="btn btn-ghost btn-sm" onclick="ReparacionesModule.verPedidoEnOrden('${p.id}')">Ver orden</button>
+                      <button class="btn btn-ghost btn-sm" onclick="ReparacionesModule.limpiarPedidoHistorial('${p.id}')">Limpiar</button>
+                    </td>
                   </tr>
                 `;
               }).join('')}
@@ -764,11 +816,7 @@
     }).join('')}
     `;
 
-    const searchInput = document.getElementById('historial-pedidos-search');
-    searchInput?.addEventListener('input', (e) => {
-      historialBusqueda = e.target.value || '';
-      renderHistorialPedidos();
-    });
+    bindToolbarEvents();
   }
 
   // Renderizar notas
@@ -1147,6 +1195,8 @@
     pedidos.forEach(p => {
       p.pedidoEstado = 'enviado';
       p.pedidoEnviadoAt = new Date().toISOString();
+      p.pedidoBandejaLimpia = false;
+      p.pedidoBandejaLimpiaAt = null;
     });
     
     await window.mrsTpv.saveReparaciones(reparaciones);
@@ -1156,6 +1206,77 @@
     // Al enviar, mover automáticamente a Historial.
     const historialTabBtn = document.querySelector('.reparaciones-tabs .tab-btn[data-tab="historial"]');
     historialTabBtn?.click();
+  };
+
+  window.ReparacionesModule.limpiarPedidoHistorial = async function(reparacionId) {
+    const rep = reparaciones.find(r => r.id === reparacionId);
+    if (!rep || !rep.pedidoEnviadoAt) return;
+
+    const ok = confirm(`¿Quitar de la bandeja este pedido (${rep.numero || 'sin número'})?\nSe conservará en historial y aparecerá al buscar.`);
+    if (!ok) return;
+
+    rep.pedidoBandejaLimpia = true;
+    rep.pedidoBandejaLimpiaAt = new Date().toISOString();
+    rep.updatedAt = new Date().toISOString();
+
+    await window.mrsTpv.saveReparaciones(reparaciones);
+    renderPedidos();
+    renderHistorialPedidos();
+  };
+
+  window.ReparacionesModule.verPedidoEnOrden = function(reparacionId) {
+    const rep = reparaciones.find(r => r.id === reparacionId);
+    if (!rep) return;
+
+    ordenSeleccionada = rep;
+    renderReparaciones();
+    renderOrden();
+
+    const ordenTabBtn = document.querySelector('.reparaciones-tabs .tab-btn[data-tab="orden"]');
+    ordenTabBtn?.click();
+  };
+
+  window.ReparacionesModule.limpiarHistorialPedidos = async function(tipo = 'semana') {
+    const ahora = Date.now();
+    const limiteSemana = 7 * 24 * 60 * 60 * 1000;
+
+    const objetivo = reparaciones.filter((r) => {
+      if (!r?.pedidoEnviadoAt) return false;
+      if (!(r.pedidoEstado === 'enviado' || r.pedidoEstado === 'recibido')) return false;
+      if (r.pedidoBandejaLimpia) return false;
+
+      if (tipo === 'recibidos') {
+        return r.pedidoEstado === 'recibido';
+      }
+      if (tipo === 'semana') {
+        return (ahora - new Date(r.pedidoEnviadoAt).getTime()) <= limiteSemana;
+      }
+      return true; // tipo === 'todo'
+    });
+
+    if (objetivo.length === 0) {
+      alert('No hay pedidos para limpiar con ese filtro.');
+      return;
+    }
+
+    const etiquetas = {
+      semana: 'esta semana',
+      recibidos: 'pedidos recibidos',
+      todo: 'toda la bandeja'
+    };
+    const ok = confirm(`¿Seguro que quieres limpiar ${etiquetas[tipo] || 'la bandeja'}? (${objetivo.length} pedido/s)\nNo se borrarán, solo se ocultarán de la bandeja.`);
+    if (!ok) return;
+
+    objetivo.forEach((r) => {
+      r.pedidoBandejaLimpia = true;
+      r.pedidoBandejaLimpiaAt = new Date().toISOString();
+      r.updatedAt = new Date().toISOString();
+    });
+
+    await window.mrsTpv.saveReparaciones(reparaciones);
+    renderPedidos();
+    renderHistorialPedidos();
+    alert(`Historial limpiado: ${objetivo.length} pedido/s.`);
   };
 
   // Exportar función de inicialización
