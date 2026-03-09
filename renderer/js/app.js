@@ -747,6 +747,7 @@
   async function setupDashboard() {
     // Cargar configuración
     await loadConfig();
+    await setupSidebarVersion();
 
     // Configurar topbar
     setupTopbar();
@@ -756,6 +757,18 @@
 
     // Cargar módulo inicial
     loadModule('caja');
+  }
+
+  async function setupSidebarVersion() {
+    const el = document.getElementById('sidebar-version');
+    if (!el) return;
+    try {
+      const version = await window.mrsTpv.getVersion();
+      const clean = String(version || '').replace(/^v/i, '').trim() || '0.0.0';
+      el.textContent = `V.${clean}`;
+    } catch (_) {
+      el.textContent = 'V.0.0.0';
+    }
   }
 
   // Cargar configuración
