@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+Thumbs.db
+mrs_tpv_*.json
+pb_data/
+*.exe
+!database/pocketbase.exe

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MRS_TPV</title>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <!-- Pantalla de Asistente de Configuración -->
+  <div id="screen-asistente" class="screen hidden">
+    <div class="asistente-container">
+      <h1>Bienvenido a MRS_TPV</h1>
+      <p class="subtitle">Configuración inicial del sistema</p>
+      
+      <form id="form-asistente">
+        <div class="form-section">
+          <h2>Datos de la Empresa</h2>
+          <div class="form-group">
+            <label>Nombre de la empresa *</label>
+            <input type="text" id="nombreEmpresa" required>
+          </div>
+          <div class="form-group">
+            <label>CIF/NIF</label>
+            <input type="text" id="cif">
+          </div>
+          <div class="form-group">
+            <label>Dirección</label>
+            <input type="text" id="direccion">
+          </div>
+          <div class="form-group">
+            <label>Teléfono</label>
+            <input type="tel" id="telefono">
+          </div>
+          <div class="form-group">
+            <label>WhatsApp</label>
+            <input type="tel" id="whatsapp">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="email">
+          </div>
+          <div class="form-group">
+            <label>IBAN</label>
+            <input type="text" id="numeroCuenta">
+          </div>
+          <div class="form-group">
+            <label>IVA por defecto (%)</label>
+            <input type="number" id="ivaDefecto" value="21" min="0" max="100">
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h2>Usuario Administrador</h2>
+          <div class="form-group">
+            <label>Nombre *</label>
+            <input type="text" id="adminNombre" required>
+          </div>
+          <div class="form-group">
+            <label>Email *</label>
+            <input type="email" id="adminEmail" required>
+          </div>
+          <div class="form-group">
+            <label>Contraseña *</label>
+            <input type="password" id="adminPassword" required minlength="6">
+          </div>
+          <div class="form-group">
+            <label>Confirmar contraseña *</label>
+            <input type="password" id="adminPasswordConfirm" required minlength="6">
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="btn-continuar-asistente">Continuar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Pantalla de Login -->
+  <div id="screen-login" class="screen hidden">
+    <div class="login-container">
+      <div class="login-box">
+        <div class="login-brand">
+          <img id="login-logo" class="brand-logo login-logo hidden" alt="Logo">
+          <h1 id="login-brand-name">MRS_TPV</h1>
+        </div>
+        <p class="subtitle">Iniciar sesión</p>
+        
+        <div id="license-warning" class="license-warning hidden"></div>
+        
+        <form id="form-login">
+          <div class="form-group">
+            <label>Usuario o email</label>
+            <input type="text" id="loginEmail" required autocomplete="username" placeholder="Ej: Carlos o carlos@correo.com">
+          </div>
+          <div class="form-group">
+            <label>Contraseña</label>
+            <input type="password" id="loginPassword" required autocomplete="current-password">
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-block">Iniciar sesión</button>
+          </div>
+        </form>
+
+        <div id="login-error" class="error-message hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pantalla de Activación de Licencia -->
+  <div id="screen-license" class="screen hidden">
+    <div class="license-container">
+      <div class="license-box">
+        <h1>Licencia Requerida</h1>
+        <p class="subtitle">El periodo de prueba ha finalizado</p>
+        
+        <div class="license-info">
+          <p>ID del equipo: <code id="deviceIdDisplay"></code></p>
+          <button class="btn btn-ghost" id="copyDeviceId">Copiar ID</button>
+        </div>
+
+        <form id="form-license">
+          <div class="form-group">
+            <label>Clave de licencia</label>
+            <input type="text" id="licenseKey" placeholder="MRS2.xxxxx.yyyyy" required>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Activar licencia</button>
+          </div>
+        </form>
+
+        <div id="license-error" class="error-message hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pantalla de Dashboard -->
+  <div id="screen-dashboard" class="screen hidden">
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <img id="topbar-logo" class="brand-logo topbar-logo hidden" alt="Logo">
+        <span id="topbar-nombre" class="topbar-nombre"></span>
+      </div>
+      <div class="topbar-right">
+        <div class="user-info">
+          <span id="user-nombre"></span>
+          <span class="separator">|</span>
+          <span id="user-role"></span>
+        </div>
+        <button id="btn-theme-toggle" class="btn btn-ghost" title="Cambiar tema">
+          <span id="theme-icon">🌙</span>
+        </button>
+        <button id="btn-ajustes" class="btn btn-ghost">Ajustes</button>
+        <button id="btn-logout" class="btn btn-ghost">Salir</button>
+      </div>
+    </div>
+
+    <!-- Contenedor principal -->
+    <div class="main-container">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <nav class="sidebar-nav">
+          <a href="#" class="nav-item" data-module="caja">
+            <span class="nav-icon">💰</span>
+            <span class="nav-label">Caja</span>
+          </a>
+          <a href="#" class="nav-item" data-module="productos">
+            <span class="nav-icon">📦</span>
+            <span class="nav-label">Productos</span>
+          </a>
+          <a href="#" class="nav-item" data-module="stock">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">Stock</span>
+          </a>
+          <a href="#" class="nav-item" data-module="clientes">
+            <span class="nav-icon">👥</span>
+            <span class="nav-label">Clientes</span>
+          </a>
+          <a href="#" class="nav-item" data-module="reparaciones">
+            <span class="nav-icon">🔧</span>
+            <span class="nav-label">Reparaciones</span>
+          </a>
+          <a href="#" class="nav-item" data-module="gestion">
+            <span class="nav-icon">📄</span>
+            <span class="nav-label">Gestión</span>
+          </a>
+          <a href="#" class="nav-item" data-module="documentos">
+            <span class="nav-icon">📑</span>
+            <span class="nav-label">Documentos</span>
+          </a>
+        </nav>
+      </div>
+
+      <!-- Contenido del módulo -->
+      <div class="content-area">
+        <div id="module-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/api-pb.js"></script>
+  <script src="modules/verifactu/verifactu-core.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

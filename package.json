@@ -1,0 +1,61 @@
+{
+  "name": "mrs-tpv",
+  "version": "0.0.7",
+  "description": "TPV profesional offline MRS_TPV - Electron + PocketBase",
+  "main": "main/main.js",
+  "author": "MRS_TPV",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "dependencies": {
+    "electron-pos-printer": "^1.3.8",
+    "electron-updater": "^6.1.4",
+    "pocketbase": "^0.21.0"
+  },
+  "build": {
+    "appId": "com.mrs.tpv",
+    "productName": "MRS_TPV",
+    "directories": {
+      "output": "dist"
+    },
+    "extraResources": [
+      {
+        "from": "database/pocketbase.exe",
+        "to": "database/pocketbase.exe"
+      },
+      {
+        "from": "database/pb_migrations",
+        "to": "database/pb_migrations"
+      }
+    ],
+    "files": [
+      "main/**",
+      "preload/**",
+      "renderer/**",
+      "modules/**",
+      "database/**"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "resources/icon.ico",
+      "artifactName": "MRS_TPV-Setup-${version}.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "chuyo31",
+        "repo": "MRS_TPV-UPDATES"
+      }
+    ],
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
