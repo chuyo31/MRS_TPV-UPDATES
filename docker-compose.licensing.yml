@@ -1,0 +1,33 @@
+services:
+  licensing-db:
+    image: postgres:16-alpine
+    container_name: mrs-licensing-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mrs_licensing
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - licensing_pgdata:/var/lib/postgresql/data
+
+  licensing-server:
+    build:
+      context: .
+      dockerfile: licensing-server/Dockerfile
+    container_name: mrs-licensing-server
+    restart: unless-stopped
+    depends_on:
+      - licensing-db
+    env_file:
+      - .env.licensing
+    ports:
+      - "4040:4040"
+    environment:
+      PORT: 4040
+      DATABASE_URL: postgres://postgres:postgres@licensing-db:5432/mrs_licensing
+      DEVICE_LIMIT_DEFAULT: 1
+
+volumes:
+  licensing_pgdata:

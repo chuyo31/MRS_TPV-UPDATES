@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MRS Licensing Admin</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f3f5f8; margin: 0; color: #1f2937; }
+    .wrap { max-width: 980px; margin: 24px auto; padding: 0 16px; }
+    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+    h1,h2 { margin: 0 0 12px; }
+    .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px; }
+    input, select, button { padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 14px; }
+    button { cursor: pointer; background: #0f62fe; color: white; border: 0; }
+    button.secondary { background: #6b7280; }
+    .status { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 12px; }
+    .active { background: #dcfce7; color: #166534; }
+    .revoked { background: #fee2e2; color: #991b1b; }
+    .expired { background: #fef3c7; color: #92400e; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #e5e7eb; text-align: left; padding: 8px; font-size: 13px; }
+    #app { display: none; }
+    #offlineBox { display: none; }
+    .error { color: #b91c1c; font-size: 13px; min-height: 18px; }
+    .small { font-size: 12px; color: #6b7280; }
+    @media (max-width: 800px) { .row { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div id="login" class="card">
+      <h1>Panel de Licencias MRS</h1>
+      <div class="row">
+        <input id="email" placeholder="Email admin" />
+        <input id="password" type="password" placeholder="Contraseña" />
+        <button id="btnLogin">Entrar</button>
+        <button id="btnHealth" class="secondary">Comprobar API</button>
+      </div>
+      <div id="loginMsg" class="error"></div>
+      <div class="small">Usa las credenciales definidas en <code>licensing-server/.env</code>.</div>
+    </div>
+
+    <div id="app">
+      <div class="card">
+        <h2>Crear licencia</h2>
+        <div class="row">
+          <input id="customerName" placeholder="Nombre cliente" />
+          <input id="customerEmail" placeholder="Email cliente (opcional)" />
+          <input id="plan" placeholder="Plan (ej: standard/pro)" value="standard" />
+          <input id="maxDevices" type="number" min="1" value="1" placeholder="Dispositivos" />
+        </div>
+        <div class="row">
+          <input id="expiresAt" type="datetime-local" />
+          <button id="btnCreate">Crear licencia</button>
+          <button id="btnReload" class="secondary">Recargar</button>
+          <button id="btnLogout" class="secondary">Salir</button>
+        </div>
+        <div id="createMsg" class="error"></div>
+      </div>
+
+      <div class="card">
+        <h2>Licencias</h2>
+        <div class="small" style="margin-bottom:8px;">Tip: para equipos sin internet, usa "Offline" y genera una clave por dispositivo + duración.</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Licencia</th>
+              <th>Plan</th>
+              <th>Estado</th>
+              <th>Dispositivos</th>
+              <th>Expira</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="licensesBody"></tbody>
+        </table>
+      </div>
+
+      <div class="card" id="offlineBox">
+        <h2>Generar licencia offline</h2>
+        <div class="row">
+          <input id="offlineLicenseId" readonly placeholder="ID licencia" />
+          <input id="offlineDeviceId" placeholder="ID del equipo (copiar desde app)" />
+          <input id="offlineDays" type="number" min="1" value="30" placeholder="Duración (días)" />
+          <button id="btnGenerateOffline">Generar y descargar</button>
+        </div>
+        <div class="row">
+          <button id="btnCancelOffline" class="secondary">Cancelar</button>
+        </div>
+        <div id="offlineMsg" class="error"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = { token: localStorage.getItem('mrs_admin_token') || '' };
+
+    function $(id) { return document.getElementById(id); }
+
+    async function api(path, options = {}) {
+      const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+      if (state.token) headers.Authorization = `Bearer ${state.token}`;
+      const res = await fetch(path, Object.assign({}, options, { headers }));
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || `Error ${res.status}`);
+      return json;
+    }
+
+    function renderStatus(status) {
+      return `<span class="status ${status}">${status}</span>`;
+    }
+
+    async function loadLicenses() {
+      const data = await api('/api/admin/licenses');
+      $('licensesBody').innerHTML = data.items.map((l) => `
+        <tr>
+          <td>${(l.customer_name || '-')}</td>
+          <td><code>${l.license_key}</code></td>
+          <td>${l.plan}</td>
+          <td>${renderStatus(l.status)}</td>
+          <td>${l.max_devices}</td>
+          <td>${l.expires_at ? new Date(l.expires_at).toLocaleString() : '-'}</td>
+          <td>
+            <button onclick="changeStatus('${l.id}','active')">Activar</button>
+            <button class="secondary" onclick="changeStatus('${l.id}','revoked')">Revocar</button>
+            <button class="secondary" onclick="generateOfflineKey('${l.id}')">Offline</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function changeStatus(id, status) {
+      try {
+        await api(`/api/admin/licenses/${id}/status`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status })
+        });
+        await loadLicenses();
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    async function generateOfflineKey(licenseId) {
+      $('offlineMsg').textContent = '';
+      $('offlineLicenseId').value = licenseId;
+      $('offlineDeviceId').value = '';
+      $('offlineDays').value = 30;
+      $('offlineBox').style.display = 'block';
+      $('offlineDeviceId').focus();
+    }
+
+    window.changeStatus = changeStatus;
+    window.generateOfflineKey = generateOfflineKey;
+
+    $('btnHealth').addEventListener('click', async () => {
+      try {
+        const d = await api('/api/health');
+        $('loginMsg').textContent = `API OK: ${d.now}`;
+      } catch (e) {
+        $('loginMsg').textContent = e.message;
+      }
+    });
+
+    $('btnLogin').addEventListener('click', async () => {
+      $('loginMsg').textContent = '';
+      try {
+        const email = $('email').value.trim();
+        const password = $('password').value;
+        const data = await api('/api/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ email, password })
+        });
+        state.token = data.token;
+        localStorage.setItem('mrs_admin_token', state.token);
+        $('login').style.display = 'none';
+        $('app').style.display = 'block';
+        await loadLicenses();
+      } catch (e) {
+        $('loginMsg').textContent = e.message;
+      }
+    });
+
+    $('btnCreate').addEventListener('click', async () => {
+      $('createMsg').textContent = '';
+      try {
+        const payload = {
+          customerName: $('customerName').value.trim(),
+          customerEmail: $('customerEmail').value.trim(),
+          plan: $('plan').value.trim() || 'standard',
+          maxDevices: Number($('maxDevices').value || 1),
+          expiresAt: $('expiresAt').value ? new Date($('expiresAt').value).toISOString() : null
+        };
+        await api('/api/admin/licenses', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        $('createMsg').textContent = 'Licencia creada correctamente.';
+        await loadLicenses();
+      } catch (e) {
+        $('createMsg').textContent = e.message;
+      }
+    });
+
+    $('btnReload').addEventListener('click', () => loadLicenses().catch((e) => alert(e.message)));
+    $('btnCancelOffline').addEventListener('click', () => {
+      $('offlineBox').style.display = 'none';
+      $('offlineMsg').textContent = '';
+    });
+    $('btnGenerateOffline').addEventListener('click', async () => {
+      $('offlineMsg').textContent = '';
+      const licenseId = $('offlineLicenseId').value.trim();
+      const deviceId = $('offlineDeviceId').value.trim();
+      const durationDays = Number($('offlineDays').value || 0);
+      if (!licenseId || !deviceId) {
+        $('offlineMsg').textContent = 'Debes indicar licencia e ID de equipo.';
+        return;
+      }
+      if (!Number.isFinite(durationDays) || durationDays <= 0) {
+        $('offlineMsg').textContent = 'Duración inválida.';
+        return;
+      }
+      try {
+        const data = await api(`/api/admin/licenses/${licenseId}/offline-key`, {
+          method: 'POST',
+          body: JSON.stringify({ deviceId, durationDays })
+        });
+        const content = JSON.stringify(
+          {
+            type: 'mrs_offline_license',
+            generatedAt: new Date().toISOString(),
+            key: data.key,
+            payload: data.payload
+          },
+          null,
+          2
+        );
+        const fileName = `mrs_offline_${(data?.payload?.licenseId || 'license')}_${String(deviceId).slice(0, 8)}.json`;
+        const blob = new Blob([content], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        URL.revokeObjectURL(a.href);
+        a.remove();
+        $('offlineMsg').textContent = 'Archivo offline generado y descargado.';
+      } catch (e) {
+        $('offlineMsg').textContent = e.message;
+      }
+    });
+    $('btnLogout').addEventListener('click', () => {
+      state.token = '';
+      localStorage.removeItem('mrs_admin_token');
+      $('app').style.display = 'none';
+      $('login').style.display = 'block';
+    });
+
+    if (state.token) {
+      $('login').style.display = 'none';
+      $('app').style.display = 'block';
+      loadLicenses().catch(() => {
+        state.token = '';
+        localStorage.removeItem('mrs_admin_token');
+        $('app').style.display = 'none';
+        $('login').style.display = 'block';
+      });
+    }
+  </script>
+</body>
+</html>

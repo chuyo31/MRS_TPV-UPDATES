@@ -704,6 +704,7 @@
   // Configurar activación de licencia
   function setupLicenseActivation() {
     const form = document.getElementById('form-license');
+    const btnImportLicenseFile = document.getElementById('btn-import-license-file');
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -723,6 +724,25 @@
       } catch (error) {
         console.error('Error activando licencia:', error);
         errorDiv.textContent = 'Error: ' + error.message;
+        errorDiv.classList.remove('hidden');
+      }
+    });
+
+    btnImportLicenseFile?.addEventListener('click', async () => {
+      const errorDiv = document.getElementById('license-error');
+      errorDiv.classList.add('hidden');
+      try {
+        const result = await window.mrsTpv.importLicenseFile();
+        if (result?.ok) {
+          location.reload();
+          return;
+        }
+        if (result?.message && result.message !== 'Operación cancelada.') {
+          errorDiv.textContent = result.message || 'No se pudo importar la licencia';
+          errorDiv.classList.remove('hidden');
+        }
+      } catch (error) {
+        errorDiv.textContent = 'Error importando licencia: ' + String(error?.message || error);
         errorDiv.classList.remove('hidden');
       }
     });
@@ -748,6 +768,7 @@
     // Cargar configuración
     await loadConfig();
     await setupSidebarVersion();
+    await setupSidebarLicenseStatus();
 
     // Configurar topbar
     setupTopbar();
@@ -769,6 +790,56 @@
     } catch (_) {
       el.textContent = 'V.0.0.0';
     }
+  }
+
+  async function setupSidebarLicenseStatus() {
+    const el = document.getElementById('sidebar-license-status');
+    if (!el) return;
+    const setStateClass = (state) => {
+      el.classList.remove('license-state-active', 'license-state-trial', 'license-state-blocked');
+      if (state === 'active') el.classList.add('license-state-active');
+      else if (state === 'trial') el.classList.add('license-state-trial');
+      else el.classList.add('license-state-blocked');
+    };
+    try {
+      const licenseStatus = await window.mrsTpv.getLicenseStatus();
+      const status = String(licenseStatus?.status || '');
+      const source = String(licenseStatus?.license?.source || '').toLowerCase();
+      const expiresAt = String(licenseStatus?.license?.expiresAt || '').trim();
+      if (status !== 'active') {
+        const daysLeft = Number(licenseStatus?.daysLeft || 0);
+        if (status === 'trial' && daysLeft > 0) {
+          setStateClass('trial');
+          el.textContent = `Prueba: ${daysLeft} día(s)`;
+        } else {
+          setStateClass('blocked');
+          el.textContent = 'Licencia: bloqueada';
+        }
+        return;
+      }
+      setStateClass('active');
+      if (source === 'offline-admin' && expiresAt) {
+        el.textContent = `Offline activo hasta ${formatDateShort(expiresAt)}`;
+        return;
+      }
+      if (expiresAt) {
+        el.textContent = `Licencia activa hasta ${formatDateShort(expiresAt)}`;
+        return;
+      }
+      el.textContent = 'Licencia activa';
+    } catch (_) {
+      setStateClass('blocked');
+      el.textContent = '';
+    }
+  }
+
+  function formatDateShort(value) {
+    const d = new Date(String(value || ''));
+    if (Number.isNaN(d.getTime())) return '-';
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
   }
 
   // Cargar configuración

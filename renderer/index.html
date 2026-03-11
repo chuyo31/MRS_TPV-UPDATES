@@ -123,10 +123,11 @@
         <form id="form-license">
           <div class="form-group">
             <label>Clave de licencia</label>
-            <input type="text" id="licenseKey" placeholder="MRS2.xxxxx.yyyyy" required>
+            <input type="text" id="licenseKey" placeholder="MRS-XXXX-XXXX-XXXX o MRS2.xxxxx.yyyyy" required>
           </div>
           <div class="form-actions">
             <button type="submit" class="btn btn-primary">Activar licencia</button>
+            <button type="button" class="btn btn-ghost" id="btn-import-license-file">Importar archivo</button>
           </div>
         </form>
 
@@ -194,6 +195,7 @@
             <span class="nav-label">Gestión</span>
           </a>
         </nav>
+        <div class="sidebar-license-status" id="sidebar-license-status"></div>
         <div class="sidebar-version" id="sidebar-version">V.0.0.0</div>
       </div>
 

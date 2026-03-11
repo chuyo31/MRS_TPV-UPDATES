@@ -413,6 +413,30 @@ body {
   border-top: 1px solid var(--border-color);
 }
 
+.sidebar-license-status {
+  padding: 10px 14px 8px 14px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border-color);
+  white-space: normal;
+  line-height: 1.35;
+}
+
+.sidebar-license-status.license-state-active {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.sidebar-license-status.license-state-trial {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.sidebar-license-status.license-state-blocked {
+  color: #dc2626;
+  font-weight: 600;
+}
+
 .nav-item {
   display: flex;
   align-items: center;

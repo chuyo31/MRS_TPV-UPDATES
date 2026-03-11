@@ -511,6 +511,7 @@
             <label>Clave de licencia</label>
             <input type="text" id="license-key-input" placeholder="MRS2.xxxxx.yyyyy">
             <button type="button" class="btn btn-primary" id="btn-activar-licencia">Activar Licencia</button>
+            <button type="button" class="btn btn-ghost" id="btn-cargar-licencia-archivo">Cargar licencia (archivo)</button>
           </div>
         </div>
 
@@ -1091,6 +1092,18 @@
         alert('Licencia activada correctamente');
         location.reload();
       } else {
+        alert('Error: ' + result.message);
+      }
+    });
+
+    document.getElementById('btn-cargar-licencia-archivo')?.addEventListener('click', async () => {
+      const result = await window.mrsTpv.importLicenseFile();
+      if (result?.ok) {
+        alert('Licencia cargada correctamente');
+        location.reload();
+        return;
+      }
+      if (result?.message && result.message !== 'Operación cancelada.') {
         alert('Error: ' + result.message);
       }
     });

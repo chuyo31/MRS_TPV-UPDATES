@@ -50,6 +50,9 @@ npm run build
 - `renderer/css/main.css`: estilos globales y de módulos
 - `modules/*`: lógica funcional por módulo
 - `database/pb_migrations/*`: migraciones de PocketBase
+- `licensing-server/*`: API central de licencias + DB PostgreSQL
+- `licensing-admin/*`: panel web para administrar licencias
+- `docker-compose.licensing.yml`: despliegue local/servidor de licencias
 
 ## Módulos
 
@@ -142,6 +145,23 @@ Disponible desde `Ajustes > Sistema`:
 - Trial inicial (30 días)
 - Activación por clave
 - Validación criptográfica
+
+## Panel de licencias (nuevo)
+
+Se añadió infraestructura base para administración centralizada de licencias:
+
+- API de licencias (`licensing-server`) con PostgreSQL
+- Panel admin web (`/admin`) para crear, activar y revocar licencias
+- Endpoints de activación y validación para integrar con la app desktop
+- Despliegue con Docker Compose para moverlo fácilmente a otro PC/servidor
+- Guia operativa paso a paso en `GUIA_PANEL_LICENCIAS.md`
+
+Integración app -> servidor de licencias:
+
+- La app acepta licencias remotas tipo `MRS-...` (panel admin) y también mantiene compatibilidad con formato legado `MRS2`.
+- Variable opcional en la app: `MRS_LICENSE_SERVER_URL` (por defecto `http://localhost:4040/api`).
+- Validación periódica con tolerancia offline configurable (`MRS_LICENSE_VALIDATE_INTERVAL_HOURS`, `MRS_LICENSE_OFFLINE_GRACE_DAYS`).
+- Modo offline total: generación de archivo firmado desde panel y activación en app con `Importar archivo`.
 
 ## Notas de mantenimiento
 

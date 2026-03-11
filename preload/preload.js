@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('mrsTpv', {
   getVersion: () => ipcRenderer.invoke('get-version'),
   getLicenseStatus: () => ipcRenderer.invoke('get-license-status'),
   activateLicenseKey: (key) => ipcRenderer.invoke('activate-license-key', key),
+  importLicenseFile: () => ipcRenderer.invoke('import-license-file'),
   copyText: (text) => ipcRenderer.invoke('copy-text', text),
   checkForUpdates: (opts) => ipcRenderer.invoke('check-for-updates', opts || {}),
   getUpdateStatus: () => ipcRenderer.invoke('get-update-status'),

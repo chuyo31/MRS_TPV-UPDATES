@@ -32,8 +32,11 @@ const USER_ROLES_FILE = 'mrs_tpv_user_roles.json';
 const USER_NAMES_FILE = 'mrs_tpv_user_names.json';
 const PB_SUPERUSER_FILE = 'mrs_tpv_pb_superuser.json';
 const LICENSE_FILE = 'mrs_tpv_license.json';
-const LICENSE_TRIAL_DAYS = 30;
+const LICENSE_TRIAL_DAYS = 15;
 const LICENSE_PUBLIC_KEY_FILE = 'license_public_key.pem';
+const LICENSE_SERVER_URL = String(process.env.MRS_LICENSE_SERVER_URL || 'http://localhost:4040/api').replace(/\/+$/, '');
+const LICENSE_VALIDATE_INTERVAL_HOURS = Math.max(1, Number(process.env.MRS_LICENSE_VALIDATE_INTERVAL_HOURS || 12));
+const LICENSE_OFFLINE_GRACE_DAYS = Math.max(1, Number(process.env.MRS_LICENSE_OFFLINE_GRACE_DAYS || 7));
 let mainWindow = null;
 let pocketbaseProcess = null;
 let PB_PORT = 8090;
@@ -44,6 +47,11 @@ let cachedLicensePublicKeyPem = '';
 
 function getLicensePath() {
   return path.join(app.getPath('userData'), LICENSE_FILE);
+}
+
+function getTrialAnchorPath() {
+  // Archivo fuera de userData para que no se reinicie al reinstalar.
+  return path.join(os.homedir(), '.mrs_tpv_trial_anchor.json');
 }
 
 function fromBase64Url(txt) {
@@ -116,6 +124,18 @@ function getDeviceId() {
   return crypto.createHash('sha256').update(raw).digest('hex').slice(0, 24);
 }
 
+function extractLicenseKeyFromText(raw) {
+  const txt = String(raw || '').trim();
+  if (!txt) return '';
+  if (txt.startsWith('MRS-') || txt.startsWith('MRS2.')) return txt;
+  const parsed = safeJsonParse(txt, null);
+  if (parsed && typeof parsed === 'object') {
+    const key = String(parsed.key || parsed.licenseKey || '').trim();
+    if (key.startsWith('MRS-') || key.startsWith('MRS2.')) return key;
+  }
+  return '';
+}
+
 function readLicenseRaw() {
   try {
     const p = getLicensePath();
@@ -136,13 +156,64 @@ function writeLicenseRaw(data) {
   }
 }
 
+function readTrialAnchor() {
+  try {
+    const p = getTrialAnchorPath();
+    if (!fs.existsSync(p)) return null;
+    const parsed = JSON.parse(fs.readFileSync(p, 'utf8'));
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function writeTrialAnchor(data) {
+  try {
+    const p = getTrialAnchorPath();
+    fs.writeFileSync(p, JSON.stringify(data || {}, null, 2), 'utf8');
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function resolveTrialStartIso() {
+  const anchor = readTrialAnchor();
+  const deviceId = getDeviceId();
+  const anchorTs = parseIsoTs(anchor?.trialStartAt);
+  if (anchorTs && String(anchor?.deviceId || '') === deviceId) {
+    return new Date(anchorTs).toISOString();
+  }
+  const created = {
+    version: 1,
+    deviceId,
+    trialStartAt: new Date().toISOString()
+  };
+  writeTrialAnchor(created);
+  return created.trialStartAt;
+}
+
 function ensureLicenseStore() {
   const current = readLicenseRaw();
-  if (current && typeof current === 'object') return current;
+  if (current && typeof current === 'object') {
+    const resolvedTrialStartAt = resolveTrialStartIso();
+    const currentTs = parseIsoTs(current.trialStartAt);
+    const anchorTs = parseIsoTs(resolvedTrialStartAt);
+    const normalized = { ...current };
+    // Si el archivo local fue reiniciado, respetamos la fecha ancla más antigua.
+    if (!currentTs || (anchorTs && currentTs > anchorTs)) {
+      normalized.trialStartAt = resolvedTrialStartAt;
+    }
+    normalized.trialDays = LICENSE_TRIAL_DAYS;
+    if (JSON.stringify(normalized) !== JSON.stringify(current)) {
+      writeLicenseRaw(normalized);
+    }
+    return normalized;
+  }
   const created = {
     version: 1,
     deviceId: getDeviceId(),
-    trialStartAt: new Date().toISOString(),
+    trialStartAt: resolveTrialStartIso(),
     trialDays: LICENSE_TRIAL_DAYS,
     activation: null
   };
@@ -157,6 +228,156 @@ function parseIsoTs(iso) {
 
 function asDayCeil(diffMs) {
   return Math.max(0, Math.ceil(diffMs / 86400000));
+}
+
+function safeJsonParse(text, fallback = null) {
+  try {
+    return JSON.parse(String(text || ''));
+  } catch (_) {
+    return fallback;
+  }
+}
+
+function decodeJwtPayloadUnsafe(token) {
+  try {
+    const parts = String(token || '').split('.');
+    if (parts.length < 2) return null;
+    return safeJsonParse(fromBase64Url(parts[1]), null);
+  } catch (_) {
+    return null;
+  }
+}
+
+function isLegacySignedLicenseKey(key) {
+  return String(key || '').trim().startsWith('MRS2.');
+}
+
+async function postJsonWithTimeout(url, body, timeoutMs = 5000) {
+  if (typeof fetch !== 'function') {
+    throw new Error('fetch no disponible en este entorno.');
+  }
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body || {}),
+      signal: ctrl.signal
+    });
+    const text = await res.text();
+    const json = safeJsonParse(text, {});
+    if (!res.ok) {
+      const err = new Error(String(json?.error || 'Error HTTP ' + res.status));
+      err.status = res.status;
+      err.payload = json;
+      throw err;
+    }
+    return json;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function buildServerActivationStatus(base, activation, now) {
+  const token = String(activation?.token || '');
+  if (!token) {
+    return { ...base, status: 'blocked', daysLeft: 0, message: 'Licencia remota inválida (sin token).' };
+  }
+
+  const payload = decodeJwtPayloadUnsafe(token) || {};
+  const expTs = Number(payload?.exp) > 0 ? (Number(payload.exp) * 1000) : null;
+  const validatedTs = parseIsoTs(activation?.validatedAt) || parseIsoTs(activation?.activatedAt) || now;
+  const lastCheckTs = parseIsoTs(activation?.lastCheckAt) || null;
+  const invalidReason = String(activation?.invalidReason || '').trim();
+
+  if (invalidReason) {
+    return { ...base, status: 'blocked', daysLeft: 0, message: 'Licencia rechazada por servidor: ' + invalidReason };
+  }
+  if (Number.isFinite(expTs) && now > expTs) {
+    return { ...base, status: 'blocked', daysLeft: 0, message: 'La licencia remota está vencida.' };
+  }
+
+  const graceMs = LICENSE_OFFLINE_GRACE_DAYS * 86400000;
+  const staleMs = now - validatedTs;
+  if (staleMs > graceMs) {
+    return {
+      ...base,
+      status: 'blocked',
+      daysLeft: 0,
+      message: 'No se pudo validar la licencia durante ' + LICENSE_OFFLINE_GRACE_DAYS + ' días. Conecta internet para reactivar.'
+    };
+  }
+
+  const shouldRefresh = !lastCheckTs || ((now - lastCheckTs) > (LICENSE_VALIDATE_INTERVAL_HOURS * 3600000));
+  const offlineGraceLeft = asDayCeil(graceMs - staleMs);
+  return {
+    ...base,
+    status: 'active',
+    daysLeft: Number.isFinite(expTs) ? asDayCeil(expTs - now) : null,
+    message: shouldRefresh
+      ? 'Licencia activa. Validación pendiente con servidor.'
+      : 'Licencia activa.',
+    license: {
+      id: String(activation?.license?.id || payload?.sub || ''),
+      customer: String(activation?.license?.customer || ''),
+      plan: String(activation?.license?.plan || payload?.plan || ''),
+      issuedAt: String(activation?.activatedAt || ''),
+      expiresAt: Number.isFinite(expTs) ? new Date(expTs).toISOString() : '',
+      source: 'server',
+      serverUrl: LICENSE_SERVER_URL,
+      offlineGraceDaysLeft: offlineGraceLeft
+    }
+  };
+}
+
+async function refreshServerActivationIfNeeded(force = false) {
+  const store = ensureLicenseStore();
+  const activation = store?.activation;
+  if (!activation || activation.mode !== 'server' || !activation.token) {
+    return getLicenseStatusInternal();
+  }
+
+  const now = Date.now();
+  const lastCheckTs = parseIsoTs(activation.lastCheckAt) || 0;
+  const intervalMs = LICENSE_VALIDATE_INTERVAL_HOURS * 3600000;
+  if (!force && lastCheckTs && (now - lastCheckTs) < intervalMs) {
+    return getLicenseStatusInternal();
+  }
+
+  try {
+    const result = await postJsonWithTimeout(LICENSE_SERVER_URL + '/license/validate', { token: activation.token }, 5000);
+    if (result?.valid) {
+      store.activation = {
+        ...activation,
+        validatedAt: new Date().toISOString(),
+        lastCheckAt: new Date().toISOString(),
+        lastResult: 'ok',
+        invalidReason: ''
+      };
+      writeLicenseRaw(store);
+    }
+  } catch (error) {
+    const status = Number(error?.status || 0);
+    if (status === 401 || status === 403 || status === 404) {
+      store.activation = {
+        ...activation,
+        lastCheckAt: new Date().toISOString(),
+        lastResult: 'invalid',
+        invalidReason: String(error?.message || 'token_invalido')
+      };
+      writeLicenseRaw(store);
+    } else {
+      store.activation = {
+        ...activation,
+        lastCheckAt: new Date().toISOString(),
+        lastResult: 'network_error'
+      };
+      writeLicenseRaw(store);
+    }
+  }
+
+  return getLicenseStatusInternal();
 }
 
 function decodeAndValidateLicenseKey(key) {
@@ -217,6 +438,9 @@ function getLicenseStatusInternal() {
 
   const activation = lic?.activation;
   if (activation?.key) {
+    if (activation.mode === 'server') {
+      return buildServerActivationStatus(base, activation, now);
+    }
     const parsed = decodeAndValidateLicenseKey(activation.key);
     if (!parsed.ok) {
       return { ...base, status: 'blocked', daysLeft: 0, message: 'Licencia inválida: ' + parsed.error };
@@ -245,13 +469,14 @@ function getLicenseStatusInternal() {
         customer: payload.customer || '',
         plan: payload.plan || '',
         issuedAt: payload.issuedAt || '',
-        expiresAt: Number.isFinite(expTs) ? new Date(expTs).toISOString() : ''
+        expiresAt: Number.isFinite(expTs) ? new Date(expTs).toISOString() : '',
+        source: String(payload.source || 'legacy')
       }
     };
   }
 
   if (now > trialEndTs) {
-    return { ...base, status: 'blocked', daysLeft: 0, message: 'El periodo de prueba de 30 días ha finalizado.' };
+    return { ...base, status: 'blocked', daysLeft: 0, message: 'El periodo de prueba de ' + trialDays + ' días ha finalizado.' };
   }
   if (base.daysLeft <= 10) {
     return { ...base, status: 'trial', message: 'Te quedan ' + base.daysLeft + ' días de prueba.' };
@@ -1313,33 +1538,107 @@ ipcMain.handle('copy-text', (_event, text) => {
   }
 });
 
-ipcMain.handle('get-license-status', () => {
-  return getLicenseStatusInternal();
+ipcMain.handle('get-license-status', async () => {
+  return refreshServerActivationIfNeeded(false);
 });
 
-ipcMain.handle('activate-license-key', (_event, key) => {
-  const parsed = decodeAndValidateLicenseKey(key);
-  if (!parsed.ok) {
-    return { ok: false, message: parsed.error, status: getLicenseStatusInternal() };
+async function activateLicenseByKey(key) {
+  const trimmedKey = String(key || '').trim();
+  if (!trimmedKey) {
+    return { ok: false, message: 'Debes introducir una licencia.', status: getLicenseStatusInternal() };
   }
-  const payload = parsed.payload || {};
-  const deviceId = getDeviceId();
-  if (payload.deviceId && String(payload.deviceId) !== deviceId) {
-    return { ok: false, message: 'La licencia no pertenece a este equipo.', status: getLicenseStatusInternal() };
+
+  if (isLegacySignedLicenseKey(trimmedKey)) {
+    const parsed = decodeAndValidateLicenseKey(trimmedKey);
+    if (!parsed.ok) {
+      return { ok: false, message: parsed.error, status: getLicenseStatusInternal() };
+    }
+    const payload = parsed.payload || {};
+    const deviceId = getDeviceId();
+    if (payload.deviceId && String(payload.deviceId) !== deviceId) {
+      return { ok: false, message: 'La licencia no pertenece a este equipo.', status: getLicenseStatusInternal() };
+    }
+    if (Number.isFinite(payload._expiresAtTs) && Date.now() > payload._expiresAtTs) {
+      return { ok: false, message: 'La licencia está vencida.', status: getLicenseStatusInternal() };
+    }
+    const store = ensureLicenseStore();
+    store.activation = {
+      mode: 'legacy',
+      key: trimmedKey,
+      activatedAt: new Date().toISOString()
+    };
+    const saved = writeLicenseRaw(store);
+    if (!saved) {
+      return { ok: false, message: 'No se pudo guardar la licencia en disco.', status: getLicenseStatusInternal() };
+    }
+    return { ok: true, message: 'Licencia activada correctamente.', status: getLicenseStatusInternal() };
   }
-  if (Number.isFinite(payload._expiresAtTs) && Date.now() > payload._expiresAtTs) {
-    return { ok: false, message: 'La licencia está vencida.', status: getLicenseStatusInternal() };
+
+  try {
+    const response = await postJsonWithTimeout(LICENSE_SERVER_URL + '/license/activate', {
+      licenseKey: trimmedKey,
+      deviceFingerprint: getDeviceId(),
+      appVersion: String(app.getVersion() || '0.0.0')
+    }, 7000);
+
+    if (!response?.ok || !response?.token) {
+      return { ok: false, message: 'Respuesta inválida del servidor de licencias.', status: getLicenseStatusInternal() };
+    }
+
+    const store = ensureLicenseStore();
+    store.activation = {
+      mode: 'server',
+      key: trimmedKey,
+      token: String(response.token),
+      license: response.license || {},
+      activatedAt: new Date().toISOString(),
+      validatedAt: new Date().toISOString(),
+      lastCheckAt: new Date().toISOString(),
+      lastResult: 'ok',
+      invalidReason: ''
+    };
+    const saved = writeLicenseRaw(store);
+    if (!saved) {
+      return { ok: false, message: 'No se pudo guardar la licencia en disco.', status: getLicenseStatusInternal() };
+    }
+    const status = await refreshServerActivationIfNeeded(true);
+    return { ok: true, message: 'Licencia activada correctamente por servidor.', status };
+  } catch (error) {
+    return {
+      ok: false,
+      message: String(error?.message || 'No se pudo contactar con el servidor de licencias.'),
+      status: getLicenseStatusInternal()
+    };
   }
-  const store = ensureLicenseStore();
-  store.activation = {
-    key: String(key || '').trim(),
-    activatedAt: new Date().toISOString()
-  };
-  const saved = writeLicenseRaw(store);
-  if (!saved) {
-    return { ok: false, message: 'No se pudo guardar la licencia en disco.', status: getLicenseStatusInternal() };
+}
+
+ipcMain.handle('activate-license-key', async (_event, key) => {
+  return activateLicenseByKey(key);
+});
+
+ipcMain.handle('import-license-file', async () => {
+  try {
+    const result = await dialog.showOpenDialog({
+      title: 'Seleccionar archivo de licencia',
+      properties: ['openFile'],
+      filters: [
+        { name: 'Licencia', extensions: ['json', 'txt', 'lic', 'key'] },
+        { name: 'Todos', extensions: ['*'] }
+      ]
+    });
+    if (result.canceled || !result.filePaths?.length) {
+      return { ok: false, message: 'Operación cancelada.' };
+    }
+    const filePath = String(result.filePaths[0] || '');
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const extractedKey = extractLicenseKeyFromText(raw);
+    if (!extractedKey) {
+      return { ok: false, message: 'No se encontró una clave válida en el archivo seleccionado.' };
+    }
+    return activateLicenseByKey(extractedKey);
+  } catch (error) {
+    return { ok: false, message: 'No se pudo importar licencia: ' + String(error?.message || error) };
   }
-  return { ok: true, message: 'Licencia activada correctamente.', status: getLicenseStatusInternal() };
 });
 
 ipcMain.handle('check-for-updates', async (_event, opts) => {

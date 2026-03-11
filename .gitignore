@@ -8,3 +8,6 @@ pb_data/
 *.exe
 !database/pocketbase.exe
 savepoints/
+.env
+.env.*
+!.env.example
