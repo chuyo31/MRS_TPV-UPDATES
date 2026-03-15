@@ -1,8 +1,8 @@
 version: 0.1.4
 files:
   - url: MRS_TPV-Setup-0.1.4.exe
-    sha512: vMgB1FI2aHNDLBE2FCbmt352Tgtxs8nIpUiFIYUzthGM4koDh8zWoGhebkRz0E6X6qZc9iuraOOSP4Ui4dGvPQ==
-    size: 96155082
+    sha512: 5fq51OFNDpOGEET5wOGklwg3ZJ+yRC7n8NvnyOe/FZDeXsgbBKvGMZrPc7G3uyOjQvBLVGdxsdO7ALlMMYr21g==
+    size: 96162584
 path: MRS_TPV-Setup-0.1.4.exe
-sha512: vMgB1FI2aHNDLBE2FCbmt352Tgtxs8nIpUiFIYUzthGM4koDh8zWoGhebkRz0E6X6qZc9iuraOOSP4Ui4dGvPQ==
-releaseDate: '2026-03-15T15:56:36.995Z'
+sha512: 5fq51OFNDpOGEET5wOGklwg3ZJ+yRC7n8NvnyOe/FZDeXsgbBKvGMZrPc7G3uyOjQvBLVGdxsdO7ALlMMYr21g==
+releaseDate: '2026-03-15T17:31:44.249Z'
