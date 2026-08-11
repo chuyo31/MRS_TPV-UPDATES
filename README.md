@@ -1,9 +1,8 @@
-# MRS_TPV Updates
+# Releases
 
-Repositorio p�blico solo para artefactos de actualizaci�n de MRS_TPV.
-
+Repositorio publico solo para artefactos de actualizacion de las Apps de Chuyo31.
 Los archivos de MRS_TPV en la raíz (`MRS_TPV-Setup-*.exe`, `latest.yml`) son el feed
-de actualizaciones en producción de esa app — no se tocan ni se mueven.
+de actualizaciones en producción de esa app — no se tocan ni se mueven. (de momento)
 
 ## Hub de software (`index.html`)
 
