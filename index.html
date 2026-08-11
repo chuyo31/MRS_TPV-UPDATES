@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chuyo31 · Software</title>
+  <meta name="description" content="Catálogo y descargas de las apps de Chuyo31." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'media',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc',
+              400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca',
+              800: '#3730a3', 900: '#312e81',
+            },
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+    .fade-in { animation: fadeIn .18s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+
+  <!-- Header -->
+  <header class="border-b border-slate-200 dark:border-slate-800">
+    <div class="mx-auto max-w-6xl px-6 py-10">
+      <p class="text-sm font-medium text-brand-600 dark:text-brand-400">chuyo31</p>
+      <h1 class="mt-1 text-3xl sm:text-4xl font-bold tracking-tight">Software</h1>
+      <p class="mt-2 max-w-xl text-slate-600 dark:text-slate-400">
+        Descarga directa de mis aplicaciones. Cada instalador incluye actualizaciones
+        automáticas y su hash SHA256 para que puedas verificarlo.
+      </p>
+    </div>
+  </header>
+
+  <!-- Catalog -->
+  <main class="mx-auto max-w-6xl px-6 py-10">
+    <div id="catalog" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <!-- Las tarjetas se generan por JS (ver APPS abajo) -->
+    </div>
+  </main>
+
+  <footer class="mx-auto max-w-6xl px-6 py-10 text-sm text-slate-500 dark:text-slate-500">
+    © <span id="year"></span> chuyo31 — apps creadas con IA.
+  </footer>
+
+  <!-- Modal de detalle -->
+  <div id="modal-backdrop" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm">
+    <div class="flex min-h-full items-center justify-center p-4">
+      <div id="modal-card" class="fade-in w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
+        <div id="modal-content"><!-- contenido inyectado por JS --></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Catálogo de apps: metadatos fijos (nombre, descripción, icono) + slug del
+    // que se cuelga /apps/<slug>/latest.json. Añadir una app nueva es solo añadir
+    // una entrada aquí; si su latest.json aún no existe, la tarjeta muestra "Próximamente".
+    const APPS = [
+      {
+        slug: 'gramdownloader',
+        name: 'GramDownloader',
+        tagline: 'Descarga fotos, vídeos, música y documentos de tus chats de Telegram.',
+        accent: 'from-sky-500 to-brand-600',
+        initial: 'G',
+      },
+      {
+        slug: 'mrs-suite',
+        name: 'MRS Suite',
+        tagline: 'Suite de herramientas de gestión.',
+        accent: 'from-emerald-500 to-teal-600',
+        initial: 'M',
+      },
+      {
+        slug: 'pcpi',
+        name: 'PCPI',
+        tagline: 'Herramienta PCPI.',
+        accent: 'from-amber-500 to-orange-600',
+        initial: 'P',
+      },
+    ];
+
+    const catalogEl = document.getElementById('catalog');
+    const modalBackdrop = document.getElementById('modal-backdrop');
+    const modalContent = document.getElementById('modal-content');
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Cache en memoria de los latest.json ya cargados, para no re-fetchear al
+    // abrir el modal de una app cuya tarjeta ya se cargó bien.
+    const releaseCache = new Map();
+
+    async function fetchLatest(slug) {
+      if (releaseCache.has(slug)) return releaseCache.get(slug);
+      try {
+        const res = await fetch(`apps/${slug}/latest.json`, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        releaseCache.set(slug, data);
+        return data;
+      } catch {
+        releaseCache.set(slug, null);
+        return null;
+      }
+    }
+
+    function renderCard(app, release) {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'group text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden hover:border-brand-400 dark:hover:border-brand-600 hover:shadow-lg transition';
+      card.disabled = !release;
+      if (!release) card.className += ' opacity-60 cursor-not-allowed';
+
+      card.innerHTML = `
+        <div class="h-20 bg-gradient-to-br ${app.accent} flex items-center px-5">
+          <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-white text-xl font-bold backdrop-blur">${app.initial}</span>
+        </div>
+        <div class="p-5">
+          <div class="flex items-center justify-between gap-2">
+            <h2 class="font-semibold text-lg">${app.name}</h2>
+            ${release
+              ? `<span class="shrink-0 text-xs font-medium text-brand-700 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/40 rounded-full px-2 py-0.5">v${release.version}</span>`
+              : `<span class="shrink-0 text-xs font-medium text-slate-500 bg-slate-100 dark:bg-slate-800 rounded-full px-2 py-0.5">Próximamente</span>`}
+          </div>
+          <p class="mt-1.5 text-sm text-slate-600 dark:text-slate-400 line-clamp-2">${release?.description || app.tagline}</p>
+          <p class="mt-3 text-sm font-medium text-brand-600 dark:text-brand-400 ${release ? 'group-hover:underline' : ''}">
+            ${release ? 'Ver ficha y descargar →' : 'Aún sin publicar'}
+          </p>
+        </div>`;
+
+      if (release) card.addEventListener('click', () => openModal(app, release));
+      return card;
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '—';
+      try {
+        return new Date(iso).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+      } catch {
+        return iso;
+      }
+    }
+
+    function openModal(app, release) {
+      const previous = release.previousReleases || [];
+      modalContent.innerHTML = `
+        <div class="h-24 bg-gradient-to-br ${app.accent} flex items-end px-6 pb-4">
+          <div class="flex items-center gap-3">
+            <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 text-white text-2xl font-bold backdrop-blur">${app.initial}</span>
+            <div>
+              <h3 class="text-white text-xl font-bold leading-tight">${release.name || app.name}</h3>
+              <p class="text-white/80 text-xs">v${release.version} · ${formatDate(release.releaseDate)}</p>
+            </div>
+          </div>
+        </div>
+        <div class="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+          <p class="text-sm text-slate-600 dark:text-slate-400">${release.description || app.tagline}</p>
+
+          <div class="flex flex-col sm:flex-row gap-3">
+            <a href="apps/${app.slug}/${release.downloadUrl}"
+               class="flex-1 text-center rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-3 transition">
+               ⬇ Descargar instalador (.exe)
+            </a>
+            ${release.hasPortable && release.portableDownloadUrl ? `
+            <a href="apps/${app.slug}/${release.portableDownloadUrl}"
+               class="flex-1 text-center rounded-xl border border-slate-300 dark:border-slate-700 hover:border-brand-400 font-semibold px-4 py-3 transition">
+               Versión portable
+            </a>` : ''}
+          </div>
+
+          <dl class="grid grid-cols-2 gap-3 text-sm">
+            <div class="rounded-lg bg-slate-50 dark:bg-slate-800/60 p-3">
+              <dt class="text-slate-500 dark:text-slate-400">Requisitos</dt>
+              <dd class="font-medium mt-0.5">${release.requirements || '—'}</dd>
+            </div>
+            <div class="rounded-lg bg-slate-50 dark:bg-slate-800/60 p-3">
+              <dt class="text-slate-500 dark:text-slate-400">Publicado</dt>
+              <dd class="font-medium mt-0.5">${formatDate(release.releaseDate)}</dd>
+            </div>
+          </dl>
+
+          <div>
+            <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">SHA256 (instalador)</p>
+            <div class="flex items-center gap-2">
+              <code class="flex-1 truncate rounded-lg bg-slate-100 dark:bg-slate-800 px-3 py-2 text-xs font-mono">${release.sha256 || '—'}</code>
+              <button data-copy-hash class="shrink-0 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-xs font-medium hover:border-brand-400 transition">Copiar</button>
+            </div>
+          </div>
+
+          <div>
+            <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Notas de la versión</p>
+            <pre class="whitespace-pre-wrap rounded-lg bg-slate-50 dark:bg-slate-800/60 p-3 text-sm text-slate-700 dark:text-slate-300">${release.notes ? escapeHtml(release.notes) : 'Sin notas para esta versión.'}</pre>
+          </div>
+
+          ${previous.length ? `
+          <details class="rounded-lg border border-slate-200 dark:border-slate-800">
+            <summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium">Versiones anteriores (${previous.length})</summary>
+            <ul class="divide-y divide-slate-200 dark:divide-slate-800">
+              ${previous.map((p) => `
+                <li class="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                  <span>v${p.version} <span class="text-slate-500 dark:text-slate-400">· ${formatDate(p.releaseDate)}</span></span>
+                  <a href="apps/${app.slug}/${p.downloadUrl}" class="text-brand-600 dark:text-brand-400 font-medium hover:underline">Descargar</a>
+                </li>`).join('')}
+            </ul>
+          </details>` : ''}
+        </div>`;
+
+      modalContent.querySelector('[data-copy-hash]')?.addEventListener('click', (e) => {
+        navigator.clipboard.writeText(release.sha256 || '');
+        const btn = e.currentTarget;
+        const original = btn.textContent;
+        btn.textContent = 'Copiado ✓';
+        setTimeout(() => { btn.textContent = original; }, 1500);
+      });
+
+      modalBackdrop.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      modalBackdrop.classList.add('hidden');
+      modalContent.innerHTML = '';
+    }
+
+    modalBackdrop.addEventListener('click', (e) => {
+      if (e.target === modalBackdrop) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    async function init() {
+      // Placeholders inmediatos mientras se resuelven los fetch, para que la
+      // página no se sienta vacía en conexiones lentas.
+      catalogEl.innerHTML = '';
+      const results = await Promise.all(APPS.map((app) => fetchLatest(app.slug)));
+      APPS.forEach((app, i) => catalogEl.appendChild(renderCard(app, results[i])));
+
+      // Deep link: /?app=gramdownloader abre la ficha directamente.
+      const params = new URLSearchParams(location.search);
+      const wanted = params.get('app');
+      if (wanted) {
+        const idx = APPS.findIndex((a) => a.slug === wanted);
+        if (idx !== -1 && results[idx]) openModal(APPS[idx], results[idx]);
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
