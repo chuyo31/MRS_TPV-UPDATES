@@ -1,0 +1,13 @@
+{
+  "name": "MRS Suite",
+  "version": "0.1.25",
+  "releaseDate": "2026-08-13",
+  "downloadUrl": "MRS Suite-Setup.exe",
+  "sha256": "a6d8408414b42caaad0427855c81bd9569fab6d7ca9b99eb238ea707279dd218",
+  "requirements": "Windows 10 / 11 (64-bit)",
+  "notes": "fix: excluir del paquete final dependencias solo-renderer (lucide-react, pdf-lib, react*)\n\nEl instalador superaba el limite de 100MB de GitHub (Setup 100.63MB,\nPortable 100.35MB) porque electron-builder empaqueta por defecto TODAS\nlas \"dependencies\" de package.json dentro de app.asar, incluidas las\nque solo usa el renderer via el bundle de Vite (dist/) y que el\nproceso principal nunca requiere en tiempo de ejecucion: lucide-react\n(27MB), pdf-lib+pako (21MB) y react/react-dom/react-router-dom (8MB).//\nVerificado que qrcode (si usado en electron/) depende de pngjs, que\npor tanto NO se excluye.\n\nLocal: Setup 91MB, Portable 82MB (antes 96MB/no medido, ambos >100MB en CI).\n\nCo-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>\n",
+  "hasPortable": true,
+  "previousReleases": [],
+  "portableDownloadUrl": "MRS Suite-Portable.exe",
+  "portableSha256": "4e1f0cf85837414b194b89fc898ef30bc627093a1093b74dd1eccfaa35439b77"
+}
