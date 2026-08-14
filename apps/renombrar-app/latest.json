@@ -1,0 +1,13 @@
+{
+  "name": "Renombrar App",
+  "version": "0.1.0",
+  "releaseDate": "2026-08-14",
+  "downloadUrl": "Renombrar-App-Setup.exe",
+  "sha256": "b10c7822f97b7af954aaf17937e55fe5a387df8bce32dd646f859ae496be8423",
+  "requirements": "Windows 10 / 11 (64-bit)",
+  "notes": "Add auto-update infra (electron-updater + hub chuyo31.github.io/releases)\n\nConecta la app al sistema comun de auto-actualizaciones/descargas descrito\nen GUIA_RELEASES_GITHUB_PAGES.md: build.publish (provider generic) apuntando\na chuyo31.github.io/releases/apps/renombrar-app/, electron-updater requerido\ndentro de app.whenReady(), targets nsis+portable, exclusion de deps\nsolo-renderer del paquete final, y script+workflow de CI que publican el\ninstalador en el repo publico chuyo31/releases en cada tag vX.Y.Z.\n",
+  "hasPortable": true,
+  "previousReleases": [],
+  "portableDownloadUrl": "Renombrar-App-Portable.exe",
+  "portableSha256": "df3ee3c10aab3c91f9d13009abd01e19a678b74e5c4c4ab8531de429cfb5e15d"
+}
