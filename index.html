@@ -31,20 +31,30 @@
 <body class="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
 
   <!-- Header -->
-  <header class="border-b border-slate-200 dark:border-slate-800">
-    <div class="mx-auto max-w-6xl px-6 py-10">
-      <p class="text-sm font-medium text-brand-600 dark:text-brand-400">chuyo31</p>
-      <h1 class="mt-1 text-3xl sm:text-4xl font-bold tracking-tight">Software</h1>
-      <p class="mt-2 max-w-xl text-slate-600 dark:text-slate-400">
-        Descarga directa de mis aplicaciones. Cada instalador incluye actualizaciones
-        automáticas y su hash SHA256 para que puedas verificarlo.
+  <header class="relative overflow-hidden border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40">
+    <div class="mx-auto max-w-6xl px-6 py-14 sm:py-16">
+      <span class="inline-flex items-center gap-1.5 rounded-full bg-white dark:bg-slate-800 ring-1 ring-brand-200 dark:ring-brand-800 px-3 py-1 text-xs font-medium text-brand-700 dark:text-brand-400">
+        ❤️ Hecho con mucha IA por chuyo31
+      </span>
+      <h1 class="mt-4 text-4xl sm:text-5xl font-extrabold tracking-tight">Software de chuyo31</h1>
+      <p class="mt-4 max-w-2xl text-slate-700 dark:text-slate-300 leading-relaxed">
+        No soy programador profesional: esto lo hago por hobby, con conocimientos
+        básicos y bastante ayuda de la IA para sacar los proyectos adelante. Vengo del
+        mundo de las modificaciones de consolas de toda la vida, y ahora ando liado
+        creando aplicaciones y utilidades para el día a día. Esto es solo el principio
+        — el catálogo se irá ampliando poco a poco.
+      </p>
+      <p class="mt-4 max-w-xl text-sm text-slate-500 dark:text-slate-500">
+        Descarga directa, sin cuentas ni anuncios. Cada instalador incluye
+        actualizaciones automáticas y su hash SHA256 para que puedas verificarlo.
       </p>
     </div>
   </header>
 
   <!-- Catalog -->
-  <main class="mx-auto max-w-6xl px-6 py-10">
-    <div id="catalog" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+  <main class="mx-auto max-w-6xl px-6 py-12">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-500">Aplicaciones</h2>
+    <div id="catalog" class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       <!-- Las tarjetas se generan por JS (ver APPS abajo) -->
     </div>
   </main>
@@ -113,7 +123,7 @@
     function renderCard(app, release) {
       const card = document.createElement('button');
       card.type = 'button';
-      card.className = 'group flex flex-col h-full text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden hover:border-brand-400 dark:hover:border-brand-600 hover:shadow-lg transition';
+      card.className = 'group flex flex-col h-full text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden hover:border-brand-400 dark:hover:border-brand-600 hover:shadow-xl hover:-translate-y-0.5 transition';
       card.disabled = !release;
       if (!release) card.className += ' opacity-60 cursor-not-allowed';
 
