@@ -1,0 +1,12 @@
+version: 0.0.1
+files:
+  - url: >-
+      https://github.com/chuyo31/releases/releases/download/internet-driver-rescue-v0.1.0/Internet-Driver-Rescue-Setup-0.1.0.exe
+    sha512: >-
+      LO51D+n36SrW1AzyHiPKPMtss8jLqdOy5AU3c+5rr3XNnJsnTRHtpzTIq0+abI1WgyQQUI/N5XrWUzh0Uqvr3g==
+    size: 263554025
+path: >-
+  https://github.com/chuyo31/releases/releases/download/internet-driver-rescue-v0.1.0/Internet-Driver-Rescue-Setup-0.1.0.exe
+sha512: >-
+  LO51D+n36SrW1AzyHiPKPMtss8jLqdOy5AU3c+5rr3XNnJsnTRHtpzTIq0+abI1WgyQQUI/N5XrWUzh0Uqvr3g==
+releaseDate: '2026-08-15T23:31:21.594Z'

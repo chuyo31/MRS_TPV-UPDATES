@@ -1,0 +1,13 @@
+{
+  "name": "Internet Driver Rescue",
+  "version": "0.1.0",
+  "releaseDate": "2026-08-15",
+  "downloadUrl": "https://github.com/chuyo31/releases/releases/download/internet-driver-rescue-v0.1.0/Internet-Driver-Rescue-Setup-0.1.0.exe",
+  "sha256": "f41677f3796cd9849f07490b2146602b7be9c266fd072e1f69195cd9fea4bb0e",
+  "requirements": "Windows 10 / 11 (64-bit)",
+  "notes": "Internet Driver Rescue: primer commit\n\nApp de Electron offline para rescatar Ethernet/WiFi en un PC recién\nformateado sin Internet: escanea hardware PnP, localiza el driver\ncorrecto en Drivers/ (por Hardware ID, analizando el .inf, no solo el\nnombre de carpeta) y lo instala con pnputil. Drivers/ va empaquetado\ndentro del instalador.\n",
+  "hasPortable": true,
+  "previousReleases": [],
+  "portableDownloadUrl": "https://github.com/chuyo31/releases/releases/download/internet-driver-rescue-v0.1.0/Internet-Driver-Rescue-Portable-0.1.0.exe",
+  "portableSha256": "7d82068c015a6269dab33d0252d2f2aa0b124aa9773b5c9b0db0bb1e44e6a5eb"
+}
