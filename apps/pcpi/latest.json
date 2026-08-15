@@ -1,13 +1,19 @@
 {
   "name": "PCPI",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "releaseDate": "2026-08-15",
   "downloadUrl": "PCPI-Setup.exe",
-  "sha256": "8ffd9f4b350890fe2af24e7da68cc3f6018546fd70a607779fe3b77e1286af12",
+  "sha256": "e3864a4b77a7bed5b057251f7a227d3443c9e4ff013dfaaf5a315b54130bd10b",
   "requirements": "Windows 10 / 11 (64-bit)",
-  "notes": "Anadir desinstalador de todo el software del PC, con limpieza de registro\n\nNueva seccion \"Desinstalar\" en el sidebar: lista todo el software\ninstalado (no solo el catalogo de PCPI), con seleccion multiple y\ndesinstalacion por lote, sin pasar por Configuracion > Aplicaciones de\nWindows. Reutiliza winget uninstall por debajo.\n\nLa fuente de datos NO es la tabla de \"winget list\": winget trunca con\n\"...\" cualquier columna que no le quepa en el ancho de consola que\ndetecta (agresivo al no tener TTY, solo pipe), perdiendo datos reales\nde forma irrecuperable para nombres/rutas largos. En su lugar se lee\nel registro de Windows directamente (HKLM/HKLM WOW6432Node/HKCU ->\n...\\Uninstall), la misma fuente que usa winget pero sin truncar nada.\nVerificado con datos reales: 71 programas bien identificados frente a\nlas ~133 filas con datos incorrectos que daba el parser anterior.\n\nDe paso se arregla parseWingetTable(): con la regex anterior, un\nnombre de winget que incluye la version (p. ej. \"LMMS 1.2.2\") podia\nconfundirse con la columna Id real, intercambiando id<->version. Ahora\nse parsean columnas por posicion (separadas por 2+ espacios) en vez de\nuna regex de fin de linea. Esto tambien podia afectar silenciosamente\na la deteccion de instalado/actualizable de apps del catalogo cuyo\nnombre de winget incluyera la version.\n\nDesinstalar ahora resuelve por --name --exact en vez de --id, ya que\nel id de winget para entradas ARP no siempre es fiable/legible.\n\nLimpieza de registro tras desinstalar (conservadora, sin escaneo\namplio): comprueba si queda una entrada fantasma en Programas y\ncaracteristicas y, solo si el usuario confirma explicitamente boton a\nboton, borra esa clave concreta (con reintento elevado por UAC si hace\nfalta).\n\nIconos reales por programa via la API nativa de Electron\n(app.getFileIcon) sobre la ruta DisplayIcon del registro, con fallback\na un icono generico.\n",
+  "notes": "Anadir Desinstalador y Drivers (2 fases), redisenar UI, documentar en README\n\n- Desinstalador: lista completa desde el registro (no winget list, que\n  trunca nombres/rutas largas), desinstala por --name --exact, iconos\n  reales via app.getFileIcon, limpieza opcional de entradas fantasma\n  con confirmacion explicita.\n- Drivers: Fase 1 (paquetes locales drivers/ + deteccion de hardware\n  sin controlador + pnputil) y Fase 2 (Windows Update via\n  Microsoft.Update.Session), como pestanas en la misma pagina, con\n  filtro WiFi/Ethernet/Todos y botones de limpiar resultados.\n- Fix real: parseWingetTable confundia id<->version cuando el nombre\n  de winget incluye la version (p.ej. \"LMMS 1.2.2\"); afectaba tambien\n  a la deteccion instalado/actualizable del catalogo.\n- UI: sidebar reducido a items con proposito + enlaces al hub, Acerca\n  de en dos columnas (PCPI / chuyo31), footer centrado, paleta nueva,\n  toggle de tema quitado de sidebar/Configuracion.\n- README actualizado con el historial de cambios completo.\n",
   "hasPortable": true,
   "previousReleases": [
+    {
+      "version": "0.0.2",
+      "releaseDate": "2026-08-15",
+      "downloadUrl": "previous/PCPI-Setup-0.0.2.exe",
+      "sha256": "8ffd9f4b350890fe2af24e7da68cc3f6018546fd70a607779fe3b77e1286af12"
+    },
     {
       "version": "0.0.1",
       "releaseDate": "2026-08-15",
@@ -16,5 +22,5 @@
     }
   ],
   "portableDownloadUrl": "PCPI-Portable.exe",
-  "portableSha256": "1e81fd9271f538e52f6b4d41b241739e57dcfcdb98aece029952df10114c2ec5"
+  "portableSha256": "fec4138cf33bc7660d6901cf0a452a57cbc0e591ff966e98ff0d99dfeecde08b"
 }

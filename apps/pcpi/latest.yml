@@ -1,8 +1,8 @@
-version: 0.0.2
+version: 0.0.3
 files:
-  - url: PCPI-Setup-0.0.2.exe
-    sha512: AbLZmmcwQL+V+IdHQ3S4JOdAIH9mC1WLg6lZQN2P6kcs9YDNpAw/oLRR4cvvCSM55kWYCKeH7diVdIsXDpG1Zg==
-    size: 75030723
-path: PCPI-Setup-0.0.2.exe
-sha512: AbLZmmcwQL+V+IdHQ3S4JOdAIH9mC1WLg6lZQN2P6kcs9YDNpAw/oLRR4cvvCSM55kWYCKeH7diVdIsXDpG1Zg==
-releaseDate: '2026-08-15T01:58:27.508Z'
+  - url: PCPI-Setup-0.0.3.exe
+    sha512: 5HkMqA+MbMu/jJXtSOuWK9axLaa6FjREPm2LuccvqZVU+8becZj3/vCm1YtyWesrbg2H0eSjJgOTMvW05MUyag==
+    size: 75037207
+path: PCPI-Setup-0.0.3.exe
+sha512: 5HkMqA+MbMu/jJXtSOuWK9axLaa6FjREPm2LuccvqZVU+8becZj3/vCm1YtyWesrbg2H0eSjJgOTMvW05MUyag==
+releaseDate: '2026-08-15T22:08:58.106Z'
