@@ -1,0 +1,13 @@
+{
+  "name": "PCPI",
+  "version": "0.0.1",
+  "releaseDate": "2026-08-15",
+  "downloadUrl": "PCPI-Setup.exe",
+  "sha256": "f738deec7ca99874223001a463998314190d54a4c9c321e0b8e789e7bbf33a41",
+  "requirements": "Windows 10 / 11 (64-bit)",
+  "notes": "Arreglar cuelgue de la cola al encolar instalaciones mientras ya esta corriendo\n\nLa cola guardaba un snapshot fijo de items 'pending' al arrancar\nrunQueue(). Si el usuario encolaba algo nuevo mientras esa pasada ya\nestaba en curso, el item nuevo entraba en el store pero runQueue()\ndescartaba la llamada (running=true) y el snapshot activo no lo\nrecogia: se quedaba en 'pending' para siempre, isQueueIdle() nunca\ndaba true, y running no volvia a false sin cerrar la app.\n\nEl bucle ahora relee la cola en cada vuelta (incluyendo tras esperar\nel installChain) para drenar cualquier item nuevo sin necesitar una\nnueva invocacion.\n\nDe paso, runOnce() (list/upgrade/--version) no tenia ningun timeout a\ndiferencia de runWinget(): si winget se quedaba esperando su lock de\nindice, refreshSystemState() colgaba indefinidamente y dejaba un\nproceso zombi compitiendo por ese mismo lock con las siguientes\ndescargas. Se le anade un timeout de 60s que mata el proceso y\nrechaza la promesa.\n\nVersion reiniciada a 0.0.1 (a peticion del usuario, borrando el\nhistorial de releases del hub para volver a numerar desde cero).\n",
+  "hasPortable": true,
+  "previousReleases": [],
+  "portableDownloadUrl": "PCPI-Portable.exe",
+  "portableSha256": "8023262d1ec46e4100a32d6e04b6f18304f1088a0865bb5a7a10574a5962c496"
+}
