@@ -1,13 +1,20 @@
 {
   "name": "MRS Suite",
-  "version": "0.1.25",
-  "releaseDate": "2026-08-13",
-  "downloadUrl": "MRS Suite-Setup.exe",
-  "sha256": "a6d8408414b42caaad0427855c81bd9569fab6d7ca9b99eb238ea707279dd218",
+  "version": "0.1.26",
+  "releaseDate": "2026-08-15",
+  "downloadUrl": "https://github.com/chuyo31/releases/releases/download/mrs-suite-v0.1.26/MRS-Suite-Setup-0.1.26.exe",
+  "sha256": "3cf251271229b22e385b9b5023739c1752f004c3e28f06722d4088261c80c3e2",
   "requirements": "Windows 10 / 11 (64-bit)",
-  "notes": "fix: excluir del paquete final dependencias solo-renderer (lucide-react, pdf-lib, react*)\n\nEl instalador superaba el limite de 100MB de GitHub (Setup 100.63MB,\nPortable 100.35MB) porque electron-builder empaqueta por defecto TODAS\nlas \"dependencies\" de package.json dentro de app.asar, incluidas las\nque solo usa el renderer via el bundle de Vite (dist/) y que el\nproceso principal nunca requiere en tiempo de ejecucion: lucide-react\n(27MB), pdf-lib+pako (21MB) y react/react-dom/react-router-dom (8MB).//\nVerificado que qrcode (si usado en electron/) depende de pngjs, que\npor tanto NO se excluye.\n\nLocal: Setup 91MB, Portable 82MB (antes 96MB/no medido, ambos >100MB en CI).\n\nCo-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>\n",
+  "notes": "chore: bump version a 0.1.26\n\nCo-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>\n",
   "hasPortable": true,
-  "previousReleases": [],
-  "portableDownloadUrl": "MRS Suite-Portable.exe",
-  "portableSha256": "4e1f0cf85837414b194b89fc898ef30bc627093a1093b74dd1eccfaa35439b77"
+  "previousReleases": [
+    {
+      "version": "0.1.25",
+      "releaseDate": "2026-08-13",
+      "downloadUrl": "MRS Suite-Setup.exe",
+      "sha256": "a6d8408414b42caaad0427855c81bd9569fab6d7ca9b99eb238ea707279dd218"
+    }
+  ],
+  "portableDownloadUrl": "https://github.com/chuyo31/releases/releases/download/mrs-suite-v0.1.26/MRS-Suite-Portable-0.1.26.exe",
+  "portableSha256": "8562ae1465065d3817fa9bb3c71802bf90ed758d0c8a9e914c411dcfd8776b4e"
 }

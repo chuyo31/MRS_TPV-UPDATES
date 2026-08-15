@@ -1,8 +1,12 @@
-version: 0.1.25
+version: 0.1.26
 files:
-  - url: MRS Suite-Setup-0.1.25.exe
-    sha512: 2jto28+SnTl7wQ+sAJGkJvveqN8LqqSRdIOGMqnKGO7gxHcVboxKCw8c1sNUHyM2R7TawF1FHd4QglgV0ReyTA==
-    size: 100616104
-path: MRS Suite-Setup-0.1.25.exe
-sha512: 2jto28+SnTl7wQ+sAJGkJvveqN8LqqSRdIOGMqnKGO7gxHcVboxKCw8c1sNUHyM2R7TawF1FHd4QglgV0ReyTA==
-releaseDate: '2026-08-13T20:42:26.384Z'
+  - url: >-
+      https://github.com/chuyo31/releases/releases/download/mrs-suite-v0.1.26/MRS-Suite-Setup-0.1.26.exe
+    sha512: >-
+      nH79fSxn/xOq1C1JS030xfj0WDkin7SJeuRoB/0L46sttTveVTEK20mtp6oHEOBGSxK2SjW3aojhfMvcY4R/Xg==
+    size: 100630564
+path: >-
+  https://github.com/chuyo31/releases/releases/download/mrs-suite-v0.1.26/MRS-Suite-Setup-0.1.26.exe
+sha512: >-
+  nH79fSxn/xOq1C1JS030xfj0WDkin7SJeuRoB/0L46sttTveVTEK20mtp6oHEOBGSxK2SjW3aojhfMvcY4R/Xg==
+releaseDate: '2026-08-15T10:35:35.401Z'
