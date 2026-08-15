@@ -1,13 +1,20 @@
 {
   "name": "PCPI",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "releaseDate": "2026-08-15",
   "downloadUrl": "PCPI-Setup.exe",
-  "sha256": "f738deec7ca99874223001a463998314190d54a4c9c321e0b8e789e7bbf33a41",
+  "sha256": "8ffd9f4b350890fe2af24e7da68cc3f6018546fd70a607779fe3b77e1286af12",
   "requirements": "Windows 10 / 11 (64-bit)",
-  "notes": "Arreglar cuelgue de la cola al encolar instalaciones mientras ya esta corriendo\n\nLa cola guardaba un snapshot fijo de items 'pending' al arrancar\nrunQueue(). Si el usuario encolaba algo nuevo mientras esa pasada ya\nestaba en curso, el item nuevo entraba en el store pero runQueue()\ndescartaba la llamada (running=true) y el snapshot activo no lo\nrecogia: se quedaba en 'pending' para siempre, isQueueIdle() nunca\ndaba true, y running no volvia a false sin cerrar la app.\n\nEl bucle ahora relee la cola en cada vuelta (incluyendo tras esperar\nel installChain) para drenar cualquier item nuevo sin necesitar una\nnueva invocacion.\n\nDe paso, runOnce() (list/upgrade/--version) no tenia ningun timeout a\ndiferencia de runWinget(): si winget se quedaba esperando su lock de\nindice, refreshSystemState() colgaba indefinidamente y dejaba un\nproceso zombi compitiendo por ese mismo lock con las siguientes\ndescargas. Se le anade un timeout de 60s que mata el proceso y\nrechaza la promesa.\n\nVersion reiniciada a 0.0.1 (a peticion del usuario, borrando el\nhistorial de releases del hub para volver a numerar desde cero).\n",
+  "notes": "Anadir desinstalador de todo el software del PC, con limpieza de registro\n\nNueva seccion \"Desinstalar\" en el sidebar: lista todo el software\ninstalado (no solo el catalogo de PCPI), con seleccion multiple y\ndesinstalacion por lote, sin pasar por Configuracion > Aplicaciones de\nWindows. Reutiliza winget uninstall por debajo.\n\nLa fuente de datos NO es la tabla de \"winget list\": winget trunca con\n\"...\" cualquier columna que no le quepa en el ancho de consola que\ndetecta (agresivo al no tener TTY, solo pipe), perdiendo datos reales\nde forma irrecuperable para nombres/rutas largos. En su lugar se lee\nel registro de Windows directamente (HKLM/HKLM WOW6432Node/HKCU ->\n...\\Uninstall), la misma fuente que usa winget pero sin truncar nada.\nVerificado con datos reales: 71 programas bien identificados frente a\nlas ~133 filas con datos incorrectos que daba el parser anterior.\n\nDe paso se arregla parseWingetTable(): con la regex anterior, un\nnombre de winget que incluye la version (p. ej. \"LMMS 1.2.2\") podia\nconfundirse con la columna Id real, intercambiando id<->version. Ahora\nse parsean columnas por posicion (separadas por 2+ espacios) en vez de\nuna regex de fin de linea. Esto tambien podia afectar silenciosamente\na la deteccion de instalado/actualizable de apps del catalogo cuyo\nnombre de winget incluyera la version.\n\nDesinstalar ahora resuelve por --name --exact en vez de --id, ya que\nel id de winget para entradas ARP no siempre es fiable/legible.\n\nLimpieza de registro tras desinstalar (conservadora, sin escaneo\namplio): comprueba si queda una entrada fantasma en Programas y\ncaracteristicas y, solo si el usuario confirma explicitamente boton a\nboton, borra esa clave concreta (con reintento elevado por UAC si hace\nfalta).\n\nIconos reales por programa via la API nativa de Electron\n(app.getFileIcon) sobre la ruta DisplayIcon del registro, con fallback\na un icono generico.\n",
   "hasPortable": true,
-  "previousReleases": [],
+  "previousReleases": [
+    {
+      "version": "0.0.1",
+      "releaseDate": "2026-08-15",
+      "downloadUrl": "previous/PCPI-Setup-0.0.1.exe",
+      "sha256": "f738deec7ca99874223001a463998314190d54a4c9c321e0b8e789e7bbf33a41"
+    }
+  ],
   "portableDownloadUrl": "PCPI-Portable.exe",
-  "portableSha256": "8023262d1ec46e4100a32d6e04b6f18304f1088a0865bb5a7a10574a5962c496"
+  "portableSha256": "1e81fd9271f538e52f6b4d41b241739e57dcfcdb98aece029952df10114c2ec5"
 }
