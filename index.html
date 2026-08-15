@@ -111,7 +111,7 @@
     .dark .modal-info-box { border-color: rgba(255,255,255,.07); background: rgba(255,255,255,.025); }
     .dark .modal-code { border-color: rgba(255,255,255,.07); background: rgba(0,0,0,.20); }
     .dark .modal-details { border-color: rgba(255,255,255,.07); background: rgba(255,255,255,.01); }
-    .modal-primary, .modal-secondary { min-height: 58px; }
+    .modal-primary, .modal-secondary { min-height: 64px; }
 
     .theme-toggle {
       position: relative; width: 68px; height: 36px; border-radius: 999px;
@@ -385,15 +385,15 @@
 
         <div class="mt-5 grid sm:grid-cols-2 gap-2.5">
           <a href="apps/${app.slug}/${release.downloadUrl}"
-             class="modal-primary text-center rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-3 font-bold text-sm text-white shadow-lg shadow-indigo-950/20 transition">
+             class="modal-primary text-center rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-3.5 font-bold text-base text-white shadow-lg shadow-indigo-950/20 transition">
              ↓ Descargar instalador
-             <span class="block mt-0.5 text-[10px] font-medium text-white/65">.exe</span>
+             <span class="block mt-1 text-xs font-medium text-white/65">.exe</span>
           </a>
           ${release.hasPortable && release.portableDownloadUrl ? `
           <a href="apps/${app.slug}/${release.portableDownloadUrl}"
-             class="modal-secondary text-center rounded-xl border border-white/10 bg-white/[.03] hover:bg-white/[.06] px-4 py-3 font-bold text-sm transition">
+             class="modal-secondary text-center rounded-xl border border-white/10 bg-white/[.03] hover:bg-white/[.06] px-4 py-3.5 font-bold text-base transition">
              Versión portable
-             <span class="block mt-0.5 text-[10px] font-medium opacity-60">Sin instalación</span>
+             <span class="block mt-1 text-xs font-medium opacity-60">Sin instalación</span>
           </a>` : ''}
         </div>
 
