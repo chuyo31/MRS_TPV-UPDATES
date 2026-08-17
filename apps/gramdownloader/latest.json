@@ -1,13 +1,20 @@
 {
   "name": "GramDownloader",
-  "version": "0.0.1",
-  "releaseDate": "2026-08-13",
+  "version": "0.1.0",
+  "releaseDate": "2026-08-17",
   "downloadUrl": "GramDownloader-Setup.exe",
-  "sha256": "f94a990a35e67aa78155da3393d7c5139dc1872e658ce4e2a64b1b8b8dd39b9e",
+  "sha256": "7b2fa31e35406de8ed2601125d1253ae7dfcb5d3dbc2972921ddba3fcc864ef8",
   "requirements": "Windows 10 / 11 (64-bit)",
-  "notes": "Diferir electron-updater a whenReady y reducir tamano del instalador\n\n- electron-updater accedia a app.getVersion() en cuanto se leia la\n  propiedad autoUpdater (no solo al llamar sus metodos), a nivel de\n  modulo, antes de que Electron estuviese listo -- fragil segun\n  version de Electron/electron-updater. Se difiere el require hasta\n  dentro de app.whenReady().\n- El instalador y el portable superaban por poco el limite de 100 MB\n  de GitHub (101 MB), lo que hacia fallar el push del CI al repo\n  publico de releases. Se reduce con electronLanguages (solo\n  es/en), compression maximum, y excluyendo del empaquetado los\n  binarios nativos de @tailwindcss/oxide y lightningcss (solo se\n  usan en tiempo de build de Vite, nunca en runtime) -- quedan en\n  ~97 MB.\n\nCo-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>\n",
+  "notes": "Consultas en linea, edicion de mensajes en tiempo real y carpetas por album\n\n- El listener de tiempo real ahora tambien escucha mensajes EDITADOS\n  (EditedMessage), no solo nuevos: muchos bots (busqueda de musica,\n  filtros, paginacion) responden a un boton editando el mensaje en\n  vez de mandar uno nuevo, y antes pasaba completamente desapercibido.\n- formatChatItem prioriza los botones sobre la clasificacion por\n  adjunto: un mensaje con foto (caratula de album) Y botones se\n  trataba como una simple foto descargable, perdiendo los botones.\n- Soporte de consultas en linea (@Bot texto, como en la app oficial):\n  nuevo IPC telegram:getInlineResults/sendInlineResult, disparado al\n  pulsar un boton switchInline, con selector de resultados\n  (InlineResultsModal) con caratula si el bot la ofrece.\n- \"Descargar todas las pistas\": automatiza pulsar cada boton numerado\n  de una lista de pistas en secuencia, para los bots cuyo propio\n  \"Get all tracks\" no funciona (confirmado tambien roto en el\n  Telegram oficial, no era un bug de la app).\n- Carpeta \"Artista - Album\" para la musica descargada via lo\n  anterior, usando el titulo que muestra la ficha del bot\n  (parseAlbumFolder), en vez de caer siempre en la carpeta\n  solo-artista por defecto -- pensado para que Jellyfin detecte\n  mejor la musica.\n- Descarga de caratula de album: si una pista trae thumbnail\n  incrustado (hasCover), se descarga tambien como cover.jpg (una\n  por album, no una por pista) via un nuevo tipo de tarea 'cover' en\n  el DownloadManager (client.downloadMedia en vez del descargador\n  chunked, innecesario para un archivo de unos KB).\n- Rediseno de la fila de archivo: flecha verde (anadir a seleccion) +\n  X roja (quitar de la lista) a la derecha, sin checkbox ni menu de\n  tres puntos; lo quitado se persiste por chat entre sesiones. Boton\n  \"Borrar todo\" junto a \"Descargar seleccionados\".\n- Actualiza el README con las funciones nuevas y sube la version a\n  0.1.0.\n\nCo-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>\n",
   "hasPortable": true,
-  "previousReleases": [],
+  "previousReleases": [
+    {
+      "version": "0.0.1",
+      "releaseDate": "2026-08-13",
+      "downloadUrl": "previous/GramDownloader-Setup-0.0.1.exe",
+      "sha256": "f94a990a35e67aa78155da3393d7c5139dc1872e658ce4e2a64b1b8b8dd39b9e"
+    }
+  ],
   "portableDownloadUrl": "GramDownloader-Portable.exe",
-  "portableSha256": "f8076db768e920577893d3004988acd98205fbe11969ac010a7cf34f7b6ef814"
+  "portableSha256": "402be516b82603a373437ddbc2312551098f054000c6b216b00e2d2d0136f5b9"
 }
