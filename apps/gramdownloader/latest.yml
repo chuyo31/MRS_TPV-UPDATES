@@ -1,8 +1,8 @@
-version: 0.1.0
+version: 0.1.1
 files:
-  - url: GRAMDownloader-Setup-0.1.0.exe
-    sha512: 3hAbpbVnPSXNXq13jwwS6+o2eDAPjw/7D2oX3q4UBsqrFJXeST7lJDOuB1gLp0XdRC1Bkr67Rxj4nUPQS3g1OQ==
-    size: 94406250
-path: GRAMDownloader-Setup-0.1.0.exe
-sha512: 3hAbpbVnPSXNXq13jwwS6+o2eDAPjw/7D2oX3q4UBsqrFJXeST7lJDOuB1gLp0XdRC1Bkr67Rxj4nUPQS3g1OQ==
-releaseDate: '2026-08-17T00:47:27.056Z'
+  - url: GRAMDownloader-Setup-0.1.1.exe
+    sha512: j103N1pF9kF9cNnVnCvWLNhGv5wIf8S51QXpq5EmfUpfsv7ECNrshLDVOyAyOuDST4PJ4BENGA/uRRvfuLBvqg==
+    size: 94407362
+path: GRAMDownloader-Setup-0.1.1.exe
+sha512: j103N1pF9kF9cNnVnCvWLNhGv5wIf8S51QXpq5EmfUpfsv7ECNrshLDVOyAyOuDST4PJ4BENGA/uRRvfuLBvqg==
+releaseDate: '2026-08-17T07:26:13.359Z'
