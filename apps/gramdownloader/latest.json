@@ -1,11 +1,11 @@
 {
   "name": "GramDownloader",
   "version": "0.1.1",
-  "releaseDate": "2026-08-17",
+  "releaseDate": "2026-08-18",
   "downloadUrl": "GramDownloader-Setup.exe",
-  "sha256": "a87a7b1e9ac2783e287e2893e5964b3a75c754a8f6aa79777ead333656a62e24",
+  "sha256": "2ae4e9f889a60c138b0dcc17755f98373e9bba119f3b06de1da1b9d71a027c2f",
   "requirements": "Windows 10 / 11 (64-bit)",
-  "notes": "Descarga automatica de todas las pistas y carpeta personalizada\n\n- \"Descargar todas las pistas\" ya no solo pulsa los botones: cada\n  pista se encola sola para descargar en cuanto llega (via una\n  sesion activa por remitente/ventana de tiempo), sin tener que ir a\n  seleccionar arriba y pulsar aparte \"Descargar seleccionados\" --\n  quedaba como un paso redundante segun feedback directo de uso.\n- Nuevo campo de \"nombre de carpeta\" a mano (opcional) junto a\n  \"Descargar seleccionados\": si se rellena, todas las pistas de\n  audio seleccionadas -sueltas o de \"Descargar todas las pistas\"-\n  caen juntas ahi en vez de organizarse por album/artista. Tiene\n  prioridad sobre el titulo de album detectado.\n- El listener de tiempo real ahora depende tambien de destDir (no\n  solo del chat activo) para no quedarse con un valor de carpeta de\n  destino desactualizado al encolar automaticamente.\n\nCo-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>\n",
+  "notes": "Corrige fecha de mensajes, tormenta de flood-wait, y controles de descargas\n\n- message.date llegaba como numero (segundos Unix) tanto en historial\n  como en eventos en tiempo real; el codigo asumia \"instanceof Date\"\n  y siempre daba null. Sin fecha, ni el orden por fecha ni el\n  agrupamiento automatico en \"albumes\" (que depende de saber si dos\n  archivos llegaron seguidos) funcionaban de verdad. Ahora se\n  convierte bien (toIsoDate).\n- listChats() pedia el \"chat vinculado\" + mensajes fijados de CADA\n  grupo/canal en paralelo (Promise.all) para la cascada de chats\n  anidados. Con varios canales eso dispara el limite de flood de\n  channels.GetFullChannel de Telegram, y cada reinicio de la app lo\n  volvia a disparar -- llegando a afectar la entrega de eventos en\n  tiempo real. Se quita esa llamada de listChats (cascada de chats\n  desactivada por ahora; subGroups vacio) para cortarlo de raiz.\n- Al agrupar por caption automaticamente (buildFolders), un caption\n  con \"/\" (atribuciones que a veces manda un bot) creaba subcarpetas\n  anidadas por accidente; ahora se aplana a un solo segmento.\n- parseAlbumFolder ya no exige el formato \"Artista - Titulo\": usa el\n  titulo de la ficha del bot tal cual (asi tambien sirve para\n  nombres de playlist, no solo albumes).\n- Panel de Descargas: botones \"Detener todo\" (cancela todo lo activo/\n  en cola/pausado) y \"Borrar\" (limpia lo que haya quedado en error)\n  en la seccion \"En curso\".\n- README actualizado con lo anterior; se quita la mencion a la\n  cascada de chats (desactivada).\n\nCo-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>\n",
   "hasPortable": true,
   "previousReleases": [
     {
@@ -22,5 +22,5 @@
     }
   ],
   "portableDownloadUrl": "GramDownloader-Portable.exe",
-  "portableSha256": "9bef6786810d86c6f8dd0e74f36cb67f0ad6d8db40cfeff372ce46e557952ba7"
+  "portableSha256": "29c3895030ad97d3ddb0c182c6062f94cbc54562f8af821f8194b575a5d0cdaa"
 }
