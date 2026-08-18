@@ -3,9 +3,9 @@
   "version": "0.1.1",
   "releaseDate": "2026-08-18",
   "downloadUrl": "GramDownloader-Setup.exe",
-  "sha256": "2ae4e9f889a60c138b0dcc17755f98373e9bba119f3b06de1da1b9d71a027c2f",
+  "sha256": "2bbfdc9b332b7886b100c59ec21f0e33728e26345d1228bf1455bb6116fe65dc",
   "requirements": "Windows 10 / 11 (64-bit)",
-  "notes": "Corrige fecha de mensajes, tormenta de flood-wait, y controles de descargas\n\n- message.date llegaba como numero (segundos Unix) tanto en historial\n  como en eventos en tiempo real; el codigo asumia \"instanceof Date\"\n  y siempre daba null. Sin fecha, ni el orden por fecha ni el\n  agrupamiento automatico en \"albumes\" (que depende de saber si dos\n  archivos llegaron seguidos) funcionaban de verdad. Ahora se\n  convierte bien (toIsoDate).\n- listChats() pedia el \"chat vinculado\" + mensajes fijados de CADA\n  grupo/canal en paralelo (Promise.all) para la cascada de chats\n  anidados. Con varios canales eso dispara el limite de flood de\n  channels.GetFullChannel de Telegram, y cada reinicio de la app lo\n  volvia a disparar -- llegando a afectar la entrega de eventos en\n  tiempo real. Se quita esa llamada de listChats (cascada de chats\n  desactivada por ahora; subGroups vacio) para cortarlo de raiz.\n- Al agrupar por caption automaticamente (buildFolders), un caption\n  con \"/\" (atribuciones que a veces manda un bot) creaba subcarpetas\n  anidadas por accidente; ahora se aplana a un solo segmento.\n- parseAlbumFolder ya no exige el formato \"Artista - Titulo\": usa el\n  titulo de la ficha del bot tal cual (asi tambien sirve para\n  nombres de playlist, no solo albumes).\n- Panel de Descargas: botones \"Detener todo\" (cancela todo lo activo/\n  en cola/pausado) y \"Borrar\" (limpia lo que haya quedado en error)\n  en la seccion \"En curso\".\n- README actualizado con lo anterior; se quita la mencion a la\n  cascada de chats (desactivada).\n\nCo-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>\n",
+  "notes": "Limpia codigo muerto tras desactivar la cascada de chats\n\n- listChats() ya no calcula nestedIds/filtra por ellos: con subGroups\n  siempre vacio (la deteccion automatica esta desactivada, ver\n  commit anterior), ese filtro nunca cambiaba el resultado.\n- Actualiza comentarios en ChatAccordion.jsx que aun mencionaban\n  getLinkedSubGroups, ya eliminado.\n\nCo-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>\n",
   "hasPortable": true,
   "previousReleases": [
     {
@@ -22,5 +22,5 @@
     }
   ],
   "portableDownloadUrl": "GramDownloader-Portable.exe",
-  "portableSha256": "29c3895030ad97d3ddb0c182c6062f94cbc54562f8af821f8194b575a5d0cdaa"
+  "portableSha256": "91913c8fb50c628a1aef50c68d1a4b238b188fc66d405ca3f8eebe6cbac615cd"
 }
