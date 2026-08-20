@@ -401,6 +401,11 @@ convenciones:
       **https://chuyo31.github.io/releases/** y comprobar a mano que el botón
       "Descargar instalador" apunta a `github.com/.../releases/download/...`, no a un
       404 tipo `chuyo31.github.io/releases/apps/<slug>/https://...` — ver el bug real
-      documentado en la sección 2.1.
+      documentado en la sección 2.1. **Probar con hard refresh (`Ctrl+Shift+R`) o en
+      incógnito**: el `index.html` del hub queda cacheado en el navegador, así que tras
+      pushear un fix del propio hub (no de una app) puede seguir viéndose el 404 viejo
+      varios minutos aunque Pages ya haya desplegado la versión corregida — no es un
+      fallo del despliegue, confirmarlo con `curl` a `chuyo31.github.io/releases/index.html`
+      antes de asumir que el fix no llegó.
 - [ ] Icono `chuyo31/releases/icons/<slug>.png` (512×512, esquinas redondeadas,
       logo real de la app pedido al usuario) añadido al hub — ver sección 8.
