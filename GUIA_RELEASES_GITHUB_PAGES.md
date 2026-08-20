@@ -147,6 +147,27 @@ absolutas** al asset de la Release en vez de rutas relativas al fichero local �
 `electron-updater` (provider `generic`) resuelve cada URL con `new URL(url, feedURL)`,
 que al ser absoluta ignora el `feedURL` y descarga directo del asset.
 
+⚠️ **Bug real encontrado (Internet Driver Rescue, 2026-08-20)**: no basta con que
+`electron-updater` resuelva bien la URL absoluta — el propio `index.html` del hub tenía
+un bug independiente. Los botones de descarga del modal armaban el `href` con
+`` `apps/${app.slug}/${release.downloadUrl}` ``, asumiendo siempre una ruta relativa
+(válido solo para el modelo "simple" de la sección 2). Con el modelo de GitHub Release,
+`downloadUrl` ya es una URL absoluta, así que quedaba
+`apps/<slug>/https://github.com/...` — un 404 en el navegador, aunque el asset de la
+Release, el `latest.json` y el despliegue de Pages estuvieran todos perfectos. **Ya está
+arreglado** en `chuyo31/releases/index.html` con un helper:
+```js
+function resolveDownloadUrl(slug, url) {
+  return /^https?:\/\//i.test(url) ? url : `apps/${slug}/${url}`;
+}
+```
+usado en los tres sitios donde el hub arma un link de descarga (instalador, portable,
+versiones anteriores). **No reintroducir la concatenación directa `apps/${slug}/${url}`
+en ningún sitio nuevo del hub** — usar siempre `resolveDownloadUrl`. Al publicar una app
+con el modelo de GitHub Release, comprobar manualmente en el navegador (no solo que el
+`latest.json` responda 200) que el botón "Descargar instalador" del modal apunta a
+`github.com/.../releases/download/...` y no a `chuyo31.github.io/releases/apps/.../https://...`.
+
 Implementación de referencia completa (script + workflow) ya funcionando en
 `MRS-Suite/scripts/publish-release.cjs` y `MRS-Suite/.github/workflows/release.yml`
 — cópialos de ahí si esta app también supera los 100MB, en vez de partir de los de
@@ -376,5 +397,10 @@ convenciones:
       `GITHUB_TOKEN` limpiados del entorno si `gh` da `Bad credentials`).
 - [ ] Tag `vX.Y.Z` pusheado → Actions en verde → archivos en
       `chuyo31/releases/apps/<slug>/` → tarjeta visible en el hub.
+- [ ] Si es el modelo de GitHub Release (sección 2.1): abrir la tarjeta en
+      **https://chuyo31.github.io/releases/** y comprobar a mano que el botón
+      "Descargar instalador" apunta a `github.com/.../releases/download/...`, no a un
+      404 tipo `chuyo31.github.io/releases/apps/<slug>/https://...` — ver el bug real
+      documentado en la sección 2.1.
 - [ ] Icono `chuyo31/releases/icons/<slug>.png` (512×512, esquinas redondeadas,
       logo real de la app pedido al usuario) añadido al hub — ver sección 8.

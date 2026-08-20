@@ -325,6 +325,10 @@
     }
   }
 
+  function resolveDownloadUrl(slug, url) {
+    return /^https?:\/\//i.test(url) ? url : `apps/${slug}/${url}`;
+  }
+
   function renderCard(app, release) {
     const card = document.createElement('button');
     card.type = 'button';
@@ -390,13 +394,13 @@
         <p class="modal-description text-sm leading-6 text-slate-600 dark:text-slate-400">${release.description || app.tagline}</p>
 
         <div class="mt-5 grid sm:grid-cols-2 gap-2.5">
-          <a href="apps/${app.slug}/${release.downloadUrl}"
+          <a href="${resolveDownloadUrl(app.slug, release.downloadUrl)}"
              class="modal-primary text-center rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-3.5 font-bold text-base text-white shadow-lg shadow-indigo-950/20 transition">
              ↓ Descargar instalador
              <span class="block mt-1 text-xs font-medium text-white/65">.exe</span>
           </a>
           ${release.hasPortable && release.portableDownloadUrl ? `
-          <a href="apps/${app.slug}/${release.portableDownloadUrl}"
+          <a href="${resolveDownloadUrl(app.slug, release.portableDownloadUrl)}"
              class="modal-secondary text-center rounded-xl border border-white/10 bg-white/[.03] hover:bg-white/[.06] px-4 py-3.5 font-bold text-base transition">
              Versión portable
              <span class="block mt-1 text-xs font-medium opacity-60">Sin instalación</span>
@@ -431,7 +435,7 @@
             ${previous.map((p) => `
               <li class="flex items-center justify-between gap-3 py-2">
                 <span>v${p.version} <span class="text-slate-500">· ${formatDate(p.releaseDate)}</span></span>
-                <a href="apps/${app.slug}/${p.downloadUrl}" class="text-indigo-500 dark:text-indigo-300 font-medium hover:underline">Descargar</a>
+                <a href="${resolveDownloadUrl(app.slug, p.downloadUrl)}" class="text-indigo-500 dark:text-indigo-300 font-medium hover:underline">Descargar</a>
               </li>`).join('')}
           </ul>
         </details>` : ''}
