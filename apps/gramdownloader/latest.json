@@ -1,13 +1,19 @@
 {
   "name": "GramDownloader",
-  "version": "0.1.1",
-  "releaseDate": "2026-08-18",
+  "version": "0.1.2",
+  "releaseDate": "2026-08-20",
   "downloadUrl": "GramDownloader-Setup.exe",
-  "sha256": "2bbfdc9b332b7886b100c59ec21f0e33728e26345d1228bf1455bb6116fe65dc",
+  "sha256": "9bdf521bcf5dd88b521e455aaeb866668f49cf1bcbff1d76af5701cd5c634224",
   "requirements": "Windows 10 / 11 (64-bit)",
-  "notes": "Limpia codigo muerto tras desactivar la cascada de chats\n\n- listChats() ya no calcula nestedIds/filtra por ellos: con subGroups\n  siempre vacio (la deteccion automatica esta desactivada, ver\n  commit anterior), ese filtro nunca cambiaba el resultado.\n- Actualiza comentarios en ChatAccordion.jsx que aun mencionaban\n  getLinkedSubGroups, ya eliminado.\n\nCo-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>\n",
+  "notes": "Anadir descarga de playlists de Spotify y actualizar documentacion\n\nPegar un link de playlist publica de Spotify (propia o de otra persona) la\ndescarga entera via el bot de Telegram de siempre: metadata publica sin\ncredenciales para playlists de hasta 100 pistas, completando el resto bajo\ndemanda con Chromium headless (Playwright) solo cuando hace falta. Cada\npista se busca en secuencia contra el bot y, si hay varios resultados, se\nelige sola la mas relevante para no bloquear playlists largas con\nelecciones manuales.\n\nIncluye panel de progreso propio, ocultacion de avisos redundantes mientras\nla playlist esta activa, y limpieza de los logs de diagnostico temporales\nusados para investigar el bug de paginacion de esta misma sesion.\n",
   "hasPortable": true,
   "previousReleases": [
+    {
+      "version": "0.1.1",
+      "releaseDate": "2026-08-18",
+      "downloadUrl": "previous/GramDownloader-Setup-0.1.1.exe",
+      "sha256": "2bbfdc9b332b7886b100c59ec21f0e33728e26345d1228bf1455bb6116fe65dc"
+    },
     {
       "version": "0.1.0",
       "releaseDate": "2026-08-17",
@@ -22,5 +28,5 @@
     }
   ],
   "portableDownloadUrl": "GramDownloader-Portable.exe",
-  "portableSha256": "91913c8fb50c628a1aef50c68d1a4b238b188fc66d405ca3f8eebe6cbac615cd"
+  "portableSha256": "4de7da2072e030705579e3a8d6385f7f48b3cc74e2362fa9184a69de1f810e93"
 }
