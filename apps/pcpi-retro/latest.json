@@ -1,0 +1,11 @@
+{
+  "name": "PCPI Retro Minimals",
+  "version": "2.0.0",
+  "releaseDate": "2026-08-30",
+  "downloadUrl": "https://github.com/chuyo31/releases/releases/download/pcpi-retro-v2.0.0/PCPI-Retro-Minimals-2.0.0.exe",
+  "sha256": "932645e84747210959eee92457756852885685ff5dc3d9de1bc2372e5d64e7fa",
+  "requirements": "Windows 10 / 11 (64-bit) · ejecutar como administrador",
+  "notes": "Port de PCPI a WinForms / .NET 8 en un unico .exe portable autocontenido. 14 categorias, modulo Drivers Backup (DISM export-driver + pnputil), instalacion por winget con % por app, 5 temas y efecto CRT. Codigo fuente: https://github.com/chuyo31/pcpi-retro-minimals",
+  "hasPortable": false,
+  "previousReleases": []
+}
