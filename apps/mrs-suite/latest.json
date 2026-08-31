@@ -1,13 +1,19 @@
 {
   "name": "MRS Suite",
-  "version": "0.1.26",
-  "releaseDate": "2026-08-15",
-  "downloadUrl": "https://github.com/chuyo31/releases/releases/download/mrs-suite-v0.1.26/MRS-Suite-Setup-0.1.26.exe",
-  "sha256": "3cf251271229b22e385b9b5023739c1752f004c3e28f06722d4088261c80c3e2",
+  "version": "0.1.27",
+  "releaseDate": "2026-08-31",
+  "downloadUrl": "https://github.com/chuyo31/releases/releases/download/mrs-suite-v0.1.27/MRS-Suite-Setup-0.1.27.exe",
+  "sha256": "8ac68cdb828b91eaec750f5d4939a4ae240da0da887efc376ef518f0ba901fd9",
   "requirements": "Windows 10 / 11 (64-bit)",
-  "notes": "chore: bump version a 0.1.26\n\nCo-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>\n",
+  "notes": "feat: exportar reparaciones a JSON (clientes, estados e historial) + doc hub\n\nNuevo botón \"Exportar\" en Reparaciones: vuelca todas las reparaciones del\nmódulo junto con la ficha completa de cada cliente vinculado y el\nhistorial de cambios de estado, a un JSON elegido por el usuario. Pensado\npara alimentar la importación en OT (Orden de Trabajo), preservando el id\noriginal de cada reparación/cliente y el estado tal cual (sin traducir).\nSolo lectura sobre la base de datos existente.\n\nDocumentación del hub de releases actualizada (sección de identidad\nvisual, ya existente sin comitear).\n\nchore: bump version a 0.1.27\n",
   "hasPortable": true,
   "previousReleases": [
+    {
+      "version": "0.1.26",
+      "releaseDate": "2026-08-15",
+      "downloadUrl": "https://github.com/chuyo31/releases/releases/download/mrs-suite-v0.1.26/MRS-Suite-Setup-0.1.26.exe",
+      "sha256": "3cf251271229b22e385b9b5023739c1752f004c3e28f06722d4088261c80c3e2"
+    },
     {
       "version": "0.1.25",
       "releaseDate": "2026-08-13",
@@ -15,6 +21,6 @@
       "sha256": "a6d8408414b42caaad0427855c81bd9569fab6d7ca9b99eb238ea707279dd218"
     }
   ],
-  "portableDownloadUrl": "https://github.com/chuyo31/releases/releases/download/mrs-suite-v0.1.26/MRS-Suite-Portable-0.1.26.exe",
-  "portableSha256": "8562ae1465065d3817fa9bb3c71802bf90ed758d0c8a9e914c411dcfd8776b4e"
+  "portableDownloadUrl": "https://github.com/chuyo31/releases/releases/download/mrs-suite-v0.1.27/MRS-Suite-Portable-0.1.27.exe",
+  "portableSha256": "4e2f59e58a4d200c99fb574101ca112da2c413584bcf24f1e78f00f6e40bfd4a"
 }
