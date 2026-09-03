@@ -3,7 +3,7 @@
   "version": "0.0.5",
   "releaseDate": "2026-09-04",
   "downloadUrl": "https://github.com/chuyo31/releases/releases/download/pcpi-retro-v0.0.5/PCPI-Retro-Minimals-Setup-0.0.5.exe",
-  "sha256": "e7cd7c79cf05c6c7c0a1412aad629f5ccaa8b96773326ae84957a941af85d2cd",
+  "sha256": "364f43a1c532675fdc7ae7ec6d0b034b0375124f4c686a09c44ba3a9b5b54da7",
   "requirements": "Windows 10 / 11 (64-bit) · ejecutar como administrador",
   "notes": "0.0.5: arreglo de instalaciones que fallaban. winget se lanza con --disable-interactivity y --no-upgrade (si el programa ya esta, se marca YA INSTALADO en vez de fallar); esto elimina el error -1978335215 (hash del instalador) al reinstalar Chrome/Firefox y similares. El log muestra ahora las lineas reales de winget y traduce los codigos de error comunes. Codigo fuente: https://github.com/chuyo31/pcpi-retro-minimals",
   "hasPortable": true,
@@ -16,5 +16,5 @@
     }
   ],
   "portableDownloadUrl": "https://github.com/chuyo31/releases/releases/download/pcpi-retro-v0.0.5/PCPI-Retro-Minimals-Portable-0.0.5.exe",
-  "portableSha256": "e7cd7c79cf05c6c7c0a1412aad629f5ccaa8b96773326ae84957a941af85d2cd"
+  "portableSha256": "364f43a1c532675fdc7ae7ec6d0b034b0375124f4c686a09c44ba3a9b5b54da7"
 }
